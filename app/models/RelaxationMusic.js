@@ -52,7 +52,7 @@ RelaxationMusic.create = async (req, res) => {
 					 }
 		 
 				const query = `INSERT INTO "relaxation_music"
-				 (id,music_name, icon,description,skill_id,time_duration ,audio_file , payment_status ,createdAt ,updescriptiondAt )
+				 (id,music_name, icon,description,skill_id,time_duration ,audio_file , payment_status ,createdAt ,updatedAt )
                             VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7, 'NOW()','NOW()' ) RETURNING * `;
 				const foundResult = await sql.query(query,
 					[music_name, '', description, skill_id, time_duration,photo, payment_status ]);

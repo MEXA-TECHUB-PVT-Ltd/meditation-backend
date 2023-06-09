@@ -10,6 +10,84 @@ exports.create = (req, res) => {
   MeditationPlan.create( req, res);
 };
 
+exports.start = (req, res) => {
+  if (!req.body) {
+    res.json({
+      message: "Content can not be empty!",
+      status: false,
+     });
+  }  
+  MeditationPlan.start( req, res);
+};
+
+exports.updateStartedPlan = (req, res) => {
+  if (!req.body) {
+    res.json({
+      message: "Content can not be empty!",
+      status: false,
+     });
+  }  
+  MeditationPlan.updateStartedPlan( req, res);
+};
+
+exports.view_completed_skills_User = (req, res) => {
+  if (!req.body) {
+    res.json({
+      message: "Content can not be empty!",
+      status: false,
+     });
+  }  
+  MeditationPlan.view_completed_skills_User( req, res);
+};
+exports.view_completed_Exercises_User = (req, res) => {
+  if (!req.body) {
+    res.json({
+      message: "Content can not be empty!",
+      status: false,
+     });
+  }  
+  MeditationPlan.view_completed_Exercises_User( req, res);
+};
+
+exports.view_All_Exercises_User = (req, res) => {
+  if (!req.body) {
+    res.json({
+      message: "Content can not be empty!",
+      status: false,
+     });
+  }  
+  MeditationPlan.view_All_Exercises_User( req, res);
+};
+
+exports.view_completed_skills_plan = (req, res) => {
+  if (!req.body) {
+    res.json({
+      message: "Content can not be empty!",
+      status: false,
+     });
+  }  
+  MeditationPlan.view_completed_skills_plan( req, res);
+};
+
+exports.viewProgress_plan_skill_user = (req, res) => {
+  if (!req.body) {
+    res.json({
+      message: "Content can not be empty!",
+      status: false,
+     });
+  }  
+  MeditationPlan.viewProgress_plan_skill_user( req, res);
+};
+exports.Streak = (req, res) => {
+  if (!req.body) {
+    res.json({
+      message: "Content can not be empty!",
+      status: false,
+     });
+  }  
+  MeditationPlan.Streak( req, res);
+};
+
 exports.viewHistory_Plan_user = (req, res) => {
   if (!req.body) {
     res.json({
@@ -19,6 +97,17 @@ exports.viewHistory_Plan_user = (req, res) => {
   }  
   MeditationPlan.viewHistory_Plan_user( req, res);
 };
+
+exports.quitPlan = (req, res) => {
+  if (!req.body) {
+    res.json({
+      message: "Content can not be empty!",
+      status: false,
+     });
+  }  
+  MeditationPlan.quitPlan( req, res);
+};
+
 exports.viewSpecific = (req, res) => {
   if (!req.body) {
     res.json({

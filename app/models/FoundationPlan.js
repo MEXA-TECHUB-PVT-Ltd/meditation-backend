@@ -33,6 +33,7 @@ FoundationPlan.create = async (req, res) => {
         level text,
 		plan_id INTEGER,
 		plan_type text,
+		plan_exercises INTEGER[],
 		started_at timestamp,
 		payment_status text,
 		progress_status text,
@@ -57,41 +58,57 @@ FoundationPlan.create = async (req, res) => {
 					started_at, plan_type,
 					payment_status,
 					progress_status } = req.body;
-				console.log(started_at)
+					let data;
+					let plan_exercises =[];
+				if (plan_type === 'meditation_plan') {
+					 data = await sql.query(`select * from "meditation_plan" where id = $1`, [plan_id]);
+				} else {
+					 data = await sql.query(`select * from "yoga_plan" where id = $1`, [plan_id]);
 
-				if (started_at == '') {
-					console.log("Please")
-					started_at = new Date();
 				}
-				const query = `INSERT INTO "foundation_plan"
+				if (data.rowCount > 0) {
+					plan_exercises = data.rows[0].exercises_id;
+					if (started_at == '') {
+						console.log("Please")
+						started_at = new Date();
+					}
+					const query = `INSERT INTO "foundation_plan"
 				 (id,plan_name, user_id ,icon,description,duration,days,goals_id,age_group ,level, plan_id,plan_type,
+					plan_exercises,
 					started_at ,
 					payment_status ,
 					progress_status ,createdAt ,updatedAt )
-                            VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8,$9,$10,$11,$12,$13,$14,'NOW()','NOW()' ) RETURNING * `;
-				const foundResult = await sql.query(query,
-					[plan_name, user_id, '', description, duration, days, goals_id, age_group, level, plan_id, plan_type,
-						started_at,
-						payment_status,
-						progress_status]);
-				if (foundResult.rows.length > 0) {
-					if (err) {
+                            VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8,$9,$10,$11,$12,$13,$14,$15,'NOW()','NOW()' ) RETURNING * `;
+					const foundResult = await sql.query(query,
+						[plan_name, user_id, '', description, duration, days, goals_id, age_group, level, plan_id, plan_type,plan_exercises,
+							started_at,
+							payment_status,
+							progress_status]);
+					if (foundResult.rows.length > 0) {
+						if (err) {
+							res.json({
+								message: "Try Again",
+								status: false,
+								err
+							});
+						}
+						else {
+							res.json({
+								message: "Foundation Plan Added Successfully!",
+								status: true,
+								result: foundResult.rows,
+							});
+						}
+					} else {
 						res.json({
 							message: "Try Again",
 							status: false,
 							err
 						});
 					}
-					else {
-						res.json({
-							message: "Foundation Plan Added Successfully!",
-							status: true,
-							result: foundResult.rows,
-						});
-					}
 				} else {
 					res.json({
-						message: "Try Again",
+						message: "Enter Valid Plan_ID",
 						status: false,
 						err
 					});
@@ -108,10 +125,10 @@ FoundationPlan.viewAllPlan = async (req, res) => {
 	let page = req.body.page;
 	let plan_type = req.body.plan_type;
 	let yoga_plan;
-	let meditation_plan;
+	let foundation_plan;
 
 	if (!page || !limit) {
-		meditation_plan = await sql.query(`SELECT  mp.*, (
+		foundation_plan = await sql.query(`SELECT  mp.*, (
 			SELECT json_agg( 
 			   json_build_object('id',g.id,'goal_name', g.name
 			   )
@@ -136,11 +153,11 @@ FoundationPlan.viewAllPlan = async (req, res) => {
 					   
 
 					   ))
-							  FROM meditation_plan s
+							  FROM foundation_plan s
 							   WHERE s.id = mp.plan_id
 								) AS plan
 					   FROM foundation_plan mp WHERE mp.plan_type = $1
-		 ORDER BY "createdat" DESC`, ['meditation_plan']);
+		 ORDER BY "createdat" DESC`, ['foundation_plan']);
 		yoga_plan = await sql.query(`SELECT  mp.*, (
 			SELECT json_agg( json_build_object('id',g.id,'goal_name', g.name) )
 				   FROM goal g
@@ -176,7 +193,7 @@ FoundationPlan.viewAllPlan = async (req, res) => {
 	if (page && limit) {
 		limit = parseInt(limit);
 		let offset = (parseInt(page) - 1) * limit
-		meditation_plan = await sql.query(`SELECT  mp.*, (
+		foundation_plan = await sql.query(`SELECT  mp.*, (
 			SELECT json_agg( 
 			   json_build_object('id',g.id,'goal_name', g.name
 			   )
@@ -196,11 +213,11 @@ FoundationPlan.viewAllPlan = async (req, res) => {
 					   FROM exercise 
 						WHERE exercise.id = ANY(s.exercises_id)
 						)					   ))
-							  FROM meditation_plan s
+							  FROM foundation_plan s
 							   WHERE s.id = mp.plan_id
 								) AS plan
 					   FROM foundation_plan mp WHERE mp.plan_type = $1
-		 ORDER BY "createdat" DESC  LIMIT $1 OFFSET $2`, ['meditation_plan', limit, offset]);
+		 ORDER BY "createdat" DESC  LIMIT $1 OFFSET $2`, ['foundation_plan', limit, offset]);
 
 		yoga_plan = await sql.query(`SELECT  mp.*, (
 			SELECT json_agg( json_build_object('id',g.id,'goal_name', g.name) )
@@ -232,7 +249,7 @@ FoundationPlan.viewAllPlan = async (req, res) => {
 			status: true,
 			Total_Foundation_plans: data.rows[0].count,
 			Foundation_plans_Yoga: yoga_plan.rows,
-			Foundation_plans_Meditations: meditation_plan.rows
+			Foundation_plans_Meditations: foundation_plan.rows
 		});
 	} else {
 		res.json({
@@ -247,7 +264,7 @@ FoundationPlan.viewCompleted = async (req, res) => {
 	let page = req.body.page;
 	let result;
 	if (!page || !limit) {
-		meditation_plan = await sql.query(`SELECT  mp.*, (
+		foundation_plan = await sql.query(`SELECT  mp.*, (
 			SELECT json_agg( 
 			   json_build_object('id',g.id,'goal_name', g.name
 			   )
@@ -272,11 +289,11 @@ FoundationPlan.viewCompleted = async (req, res) => {
 					   
 
 					   ))
-							  FROM meditation_plan s
+							  FROM foundation_plan s
 							   WHERE s.id = mp.plan_id
 								) AS plan
 					   FROM foundation_plan mp WHERE progress_status = 'completed' AND mp.plan_type = $1
-		 ORDER BY "createdat" DESC`, ['meditation_plan']);
+		 ORDER BY "createdat" DESC`, ['foundation_plan']);
 		yoga_plan = await sql.query(`SELECT  mp.*, (
 			SELECT json_agg( json_build_object('id',g.id,'goal_name', g.name) )
 				   FROM goal g
@@ -311,7 +328,7 @@ FoundationPlan.viewCompleted = async (req, res) => {
 	if (page && limit) {
 		limit = parseInt(limit);
 		let offset = (parseInt(page) - 1) * limit
-		meditation_plan = await sql.query(`SELECT  mp.*, (
+		foundation_plan = await sql.query(`SELECT  mp.*, (
 			SELECT json_agg( 
 			   json_build_object('id',g.id,'goal_name', g.name
 			   )
@@ -331,11 +348,11 @@ FoundationPlan.viewCompleted = async (req, res) => {
 					   FROM exercise 
 						WHERE exercise.id = ANY(s.exercises_id)
 						)					   ))
-							  FROM meditation_plan s
+							  FROM foundation_plan s
 							   WHERE s.id = mp.plan_id
 								) AS plan
 					   FROM foundation_plan mp WHERE progress_status = 'completed' AND mp.plan_type = $1
-		 ORDER BY "createdat" DESC  LIMIT $2 OFFSET $3`, ['meditation_plan', limit, offset]);
+		 ORDER BY "createdat" DESC  LIMIT $2 OFFSET $3`, ['foundation_plan', limit, offset]);
 
 		yoga_plan = await sql.query(`SELECT  mp.*, (
 			SELECT json_agg( json_build_object('id',g.id,'goal_name', g.name) )
@@ -367,7 +384,7 @@ FoundationPlan.viewCompleted = async (req, res) => {
 			status: true,
 			Total_Foundation_plans: data.rows[0].count,
 			Foundation_plans_Yoga: yoga_plan.rows,
-			Foundation_plans_Meditations: meditation_plan.rows
+			Foundation_plans_Meditations: foundation_plan.rows
 		});
 	} else {
 		res.json({
@@ -383,7 +400,7 @@ FoundationPlan.viewCompleted_user = async (req, res) => {
 	let page = req.body.page;
 	let result;
 	if (!page || !limit) {
-		meditation_plan = await sql.query(`SELECT  mp.*, (
+		foundation_plan = await sql.query(`SELECT  mp.*, (
 			SELECT json_agg( 
 			   json_build_object('id',g.id,'goal_name', g.name
 			   )
@@ -408,11 +425,11 @@ FoundationPlan.viewCompleted_user = async (req, res) => {
 					   
 
 					   ))
-							  FROM meditation_plan s
+							  FROM foundation_plan s
 							   WHERE s.id = mp.plan_id
 								) AS plan
 					   FROM foundation_plan mp WHERE progress_status = 'completed' AND mp.plan_type = $1 AND user_id = $2
-		 ORDER BY "createdat" DESC`, ['meditation_plan', req.body.user_id]);
+		 ORDER BY "createdat" DESC`, ['foundation_plan', req.body.user_id]);
 
 		yoga_plan = await sql.query(`SELECT  mp.*, (
 			SELECT json_agg( json_build_object('id',g.id,'goal_name', g.name) )
@@ -448,7 +465,7 @@ FoundationPlan.viewCompleted_user = async (req, res) => {
 	if (page && limit) {
 		limit = parseInt(limit);
 		let offset = (parseInt(page) - 1) * limit
-		meditation_plan = await sql.query(`SELECT  mp.*, (
+		foundation_plan = await sql.query(`SELECT  mp.*, (
 			SELECT json_agg( 
 			   json_build_object('id',g.id,'goal_name', g.name
 			   )
@@ -468,11 +485,11 @@ FoundationPlan.viewCompleted_user = async (req, res) => {
 					   FROM exercise 
 						WHERE exercise.id = ANY(s.exercises_id)
 						)					   ))
-							  FROM meditation_plan s
+							  FROM foundation_plan s
 							   WHERE s.id = mp.plan_id
 								) AS plan
 					   FROM foundation_plan mp WHERE progress_status = 'completed' AND mp.plan_type = $1 AND user_id = $2
-		 ORDER BY "createdat" DESC  LIMIT $3 OFFSET $4`, ['meditation_plan',req.body.user_id, limit, offset]);
+		 ORDER BY "createdat" DESC  LIMIT $3 OFFSET $4`, ['foundation_plan', req.body.user_id, limit, offset]);
 
 		yoga_plan = await sql.query(`SELECT  mp.*, (
 			SELECT json_agg( json_build_object('id',g.id,'goal_name', g.name) )
@@ -496,7 +513,7 @@ FoundationPlan.viewCompleted_user = async (req, res) => {
 							   WHERE s.id = mp.plan_id 
 								) AS plan
 					   FROM foundation_plan mp WHERE "mp".progress_status = 'completed' AND mp.plan_type = $1 AND user_id = $2
-		 ORDER BY "createdat" DESC LIMIT $3 OFFSET $4`, ['yoga_plan',req.body.user_id, limit, offset]);
+		 ORDER BY "createdat" DESC LIMIT $3 OFFSET $4`, ['yoga_plan', req.body.user_id, limit, offset]);
 	}
 	if (data.rows[0].count > 0) {
 		res.json({
@@ -504,7 +521,7 @@ FoundationPlan.viewCompleted_user = async (req, res) => {
 			status: true,
 			Total_Foundation_plans: data.rows[0].count,
 			Foundation_plans_Yoga: yoga_plan.rows,
-			Foundation_plans_Meditations: meditation_plan.rows
+			Foundation_plans_Meditations: foundation_plan.rows
 		});
 	} else {
 		res.json({
@@ -521,7 +538,7 @@ FoundationPlan.viewHistory_Plan_user = async (req, res) => {
 	let page = req.body.page;
 	let result;
 	if (!page || !limit) {
-		meditation_plan = await sql.query(`SELECT  mp.*, (
+		foundation_plan = await sql.query(`SELECT  mp.*, (
 			SELECT json_agg( 
 			   json_build_object('id',g.id,'goal_name', g.name
 			   )
@@ -546,11 +563,11 @@ FoundationPlan.viewHistory_Plan_user = async (req, res) => {
 					   
 
 					   ))
-							  FROM meditation_plan s
+							  FROM foundation_plan s
 							   WHERE s.id = mp.plan_id
 								) AS plan
 					   FROM foundation_plan mp WHERE mp.plan_type = $1 AND user_id = $2
-		 ORDER BY "createdat" DESC`, ['meditation_plan', req.body.user_id]);
+		 ORDER BY "createdat" DESC`, ['foundation_plan', req.body.user_id]);
 
 		yoga_plan = await sql.query(`SELECT  mp.*, (
 			SELECT json_agg( json_build_object('id',g.id,'goal_name', g.name) )
@@ -586,7 +603,7 @@ FoundationPlan.viewHistory_Plan_user = async (req, res) => {
 	if (page && limit) {
 		limit = parseInt(limit);
 		let offset = (parseInt(page) - 1) * limit
-		meditation_plan = await sql.query(`SELECT  mp.*, (
+		foundation_plan = await sql.query(`SELECT  mp.*, (
 			SELECT json_agg( 
 			   json_build_object('id',g.id,'goal_name', g.name
 			   )
@@ -606,11 +623,11 @@ FoundationPlan.viewHistory_Plan_user = async (req, res) => {
 					   FROM exercise 
 						WHERE exercise.id = ANY(s.exercises_id)
 						)					   ))
-							  FROM meditation_plan s
+							  FROM foundation_plan s
 							   WHERE s.id = mp.plan_id
 								) AS plan
 					   FROM foundation_plan mp WHERE  mp.plan_type = $1 AND user_id = $2
-		 ORDER BY "createdat" DESC  LIMIT $3 OFFSET $4`, ['meditation_plan',req.body.user_id, limit, offset]);
+		 ORDER BY "createdat" DESC  LIMIT $3 OFFSET $4`, ['foundation_plan', req.body.user_id, limit, offset]);
 
 		yoga_plan = await sql.query(`SELECT  mp.*, (
 			SELECT json_agg( json_build_object('id',g.id,'goal_name', g.name) )
@@ -634,7 +651,7 @@ FoundationPlan.viewHistory_Plan_user = async (req, res) => {
 							   WHERE s.id = mp.plan_id 
 								) AS plan
 					   FROM foundation_plan mp WHERE  mp.plan_type = $1 AND user_id = $2
-		 ORDER BY "createdat" DESC LIMIT $3 OFFSET $4`, ['yoga_plan',req.body.user_id, limit, offset]);
+		 ORDER BY "createdat" DESC LIMIT $3 OFFSET $4`, ['yoga_plan', req.body.user_id, limit, offset]);
 	}
 	if (data.rows[0].count > 0) {
 		res.json({
@@ -642,7 +659,7 @@ FoundationPlan.viewHistory_Plan_user = async (req, res) => {
 			status: true,
 			Total_Foundation_plans: data.rows[0].count,
 			Foundation_plans_Yoga: yoga_plan.rows,
-			Foundation_plans_Meditations: meditation_plan.rows
+			Foundation_plans_Meditations: foundation_plan.rows
 		});
 	} else {
 		res.json({
@@ -651,9 +668,6 @@ FoundationPlan.viewHistory_Plan_user = async (req, res) => {
 		})
 	}
 }
-
-
-
 FoundationPlan.viewStarted_user1 = async (req, res) => {
 	const data = await sql.query(`SELECT COUNT(*) AS count FROM "foundation_plan" WHERE  user_id = $1 
 	AND progress_status = 'started'`, [req.body.user_id]);
@@ -691,7 +705,7 @@ FoundationPlan.viewStarted_user = async (req, res) => {
 	let page = req.body.page;
 	let result;
 	if (!page || !limit) {
-		meditation_plan = await sql.query(`SELECT  mp.*, (
+		foundation_plan = await sql.query(`SELECT  mp.*, (
 			SELECT json_agg( 
 			   json_build_object('id',g.id,'goal_name', g.name
 			   )
@@ -716,11 +730,11 @@ FoundationPlan.viewStarted_user = async (req, res) => {
 					   
 
 					   ))
-							  FROM meditation_plan s
+							  FROM foundation_plan s
 							   WHERE s.id = mp.plan_id
 								) AS plan
 					   FROM foundation_plan mp WHERE progress_status = 'started' AND mp.plan_type = $1 AND user_id = $2
-		 ORDER BY "createdat" DESC`, ['meditation_plan', req.body.user_id]);
+		 ORDER BY "createdat" DESC`, ['foundation_plan', req.body.user_id]);
 
 		yoga_plan = await sql.query(`SELECT  mp.*, (
 			SELECT json_agg( json_build_object('id',g.id,'goal_name', g.name) )
@@ -756,7 +770,7 @@ FoundationPlan.viewStarted_user = async (req, res) => {
 	if (page && limit) {
 		limit = parseInt(limit);
 		let offset = (parseInt(page) - 1) * limit
-		meditation_plan = await sql.query(`SELECT  mp.*, (
+		foundation_plan = await sql.query(`SELECT  mp.*, (
 			SELECT json_agg( 
 			   json_build_object('id',g.id,'goal_name', g.name
 			   )
@@ -776,11 +790,11 @@ FoundationPlan.viewStarted_user = async (req, res) => {
 					   FROM exercise 
 						WHERE exercise.id = ANY(s.exercises_id)
 						)					   ))
-							  FROM meditation_plan s
+							  FROM foundation_plan s
 							   WHERE s.id = mp.plan_id
 								) AS plan
 					   FROM foundation_plan mp WHERE progress_status = 'started' AND mp.plan_type = $1 AND user_id = $2
-		 ORDER BY "createdat" DESC  LIMIT $3 OFFSET $4`, ['meditation_plan',req.body.user_id, limit, offset]);
+		 ORDER BY "createdat" DESC  LIMIT $3 OFFSET $4`, ['foundation_plan', req.body.user_id, limit, offset]);
 
 		yoga_plan = await sql.query(`SELECT  mp.*, (
 			SELECT json_agg( json_build_object('id',g.id,'goal_name', g.name) )
@@ -804,7 +818,7 @@ FoundationPlan.viewStarted_user = async (req, res) => {
 							   WHERE s.id = mp.plan_id 
 								) AS plan
 					   FROM foundation_plan mp WHERE "mp".progress_status = 'started' AND mp.plan_type = $1 AND user_id = $2
-		 ORDER BY "createdat" DESC LIMIT $3 OFFSET $4`, ['yoga_plan',req.body.user_id, limit, offset]);
+		 ORDER BY "createdat" DESC LIMIT $3 OFFSET $4`, ['yoga_plan', req.body.user_id, limit, offset]);
 	}
 	if (data.rows[0].count > 0) {
 		res.json({
@@ -812,7 +826,7 @@ FoundationPlan.viewStarted_user = async (req, res) => {
 			status: true,
 			Total_Foundation_plans: data.rows[0].count,
 			Foundation_plans_Yoga: yoga_plan.rows,
-			Foundation_plans_Meditations: meditation_plan.rows
+			Foundation_plans_Meditations: foundation_plan.rows
 		});
 	} else {
 		res.json({
@@ -885,7 +899,7 @@ FoundationPlan.viewSpecific = async (req, res) => {
 			});
 		} else {
 			let plan;
-			if (result.rows[0].plan_type === 'meditation_plan') {
+			if (result.rows[0].plan_type === 'foundation_plan') {
 				plan = await sql.query(`SELECT  mp.*, (
 					SELECT json_agg( 
 					   json_build_object('id',g.id,'goal_name', g.name
@@ -911,11 +925,11 @@ FoundationPlan.viewSpecific = async (req, res) => {
 							   
 		
 							   ))
-									  FROM meditation_plan s
+									  FROM foundation_plan s
 									   WHERE s.id = mp.plan_id
 										) AS plan
 							   FROM foundation_plan mp WHERE id = $1 AND mp.plan_type = $2
-				 ORDER BY "createdat" DESC`, [req.body.id, 'meditation_plan']);
+				 ORDER BY "createdat" DESC`, [req.body.id, 'foundation_plan']);
 			} else if (result.rows[0].plan_type === 'yoga_plan') {
 				plan = await sql.query(`SELECT  mp.*, (
 					SELECT json_agg( json_build_object('id',g.id,'goal_name', g.name) )
@@ -973,12 +987,12 @@ FoundationPlan.viewSpecific = async (req, res) => {
 }
 
 FoundationPlan.search = async (req, res) => {
-	const data = await sql.query(`SELECT COUNT(*) AS count FROM "foundation_plan" WHERE plan_name ILIKE  $1`,[`${req.body.plan_name}%`]);
+	const data = await sql.query(`SELECT COUNT(*) AS count FROM "foundation_plan" WHERE plan_name ILIKE  $1`, [`${req.body.plan_name}%`]);
 	let limit = req.body.limit;
 	let page = req.body.page;
 	let result;
 	if (!page || !limit) {
-		meditation_plan = await sql.query(`SELECT  mp.*, (
+		foundation_plan = await sql.query(`SELECT  mp.*, (
 			SELECT json_agg( 
 			   json_build_object('id',g.id,'goal_name', g.name
 			   )
@@ -1003,11 +1017,11 @@ FoundationPlan.search = async (req, res) => {
 					   
 
 					   ))
-							  FROM meditation_plan s
+							  FROM foundation_plan s
 							   WHERE s.id = mp.plan_id
 								) AS plan
 					   FROM foundation_plan mp WHERE plan_name ILIKE  $1 AND mp.plan_type = $2
-		 ORDER BY "createdat" DESC`, [`${req.body.plan_name}%`, 'meditation_plan']);
+		 ORDER BY "createdat" DESC`, [`${req.body.plan_name}%`, 'foundation_plan']);
 		yoga_plan = await sql.query(`SELECT  mp.*, (
 			SELECT json_agg( json_build_object('id',g.id,'goal_name', g.name) )
 				   FROM goal g
@@ -1042,7 +1056,7 @@ FoundationPlan.search = async (req, res) => {
 	if (page && limit) {
 		limit = parseInt(limit);
 		let offset = (parseInt(page) - 1) * limit
-		meditation_plan = await sql.query(`SELECT  mp.*, (
+		foundation_plan = await sql.query(`SELECT  mp.*, (
 			SELECT json_agg( 
 			   json_build_object('id',g.id,'goal_name', g.name
 			   )
@@ -1062,11 +1076,11 @@ FoundationPlan.search = async (req, res) => {
 					   FROM exercise 
 						WHERE exercise.id = ANY(s.exercises_id)
 						)					   ))
-							  FROM meditation_plan s
+							  FROM foundation_plan s
 							   WHERE s.id = mp.plan_id
 								) AS plan
 					   FROM foundation_plan mp WHERE plan_name ILIKE  $1 AND mp.plan_type = $2
-		 ORDER BY "createdat" DESC  LIMIT $3 OFFSET $4`, [`${req.body.plan_name}%`, 'meditation_plan', limit, offset]);
+		 ORDER BY "createdat" DESC  LIMIT $3 OFFSET $4`, [`${req.body.plan_name}%`, 'foundation_plan', limit, offset]);
 
 		yoga_plan = await sql.query(`SELECT  mp.*, (
 			SELECT json_agg( json_build_object('id',g.id,'goal_name', g.name) )
@@ -1098,7 +1112,7 @@ FoundationPlan.search = async (req, res) => {
 			status: true,
 			Total_Foundation_plans: data.rows[0].count,
 			Foundation_plans_Yoga: yoga_plan.rows,
-			Foundation_plans_Meditations: meditation_plan.rows
+			Foundation_plans_Meditations: foundation_plan.rows
 		});
 	} else {
 		res.json({
@@ -1285,29 +1299,484 @@ FoundationPlan.update = async (req, res) => {
 		}
 	}
 }
+FoundationPlan.start = async (req, res) => {
+	if (req.body.plan_id === '') {
+		res.json({
+			message: "id is required",
+			status: false,
+		});
+	} else {
+		const RelaxationMusicData = await sql.query(`select * from "foundation_plan" where id = $1`, [req.body.plan_id]);
+		if (RelaxationMusicData.rowCount > 0) {
+
+			const oldduration = RelaxationMusicData.rows[0].duration;
+			const oldstart_at = RelaxationMusicData.rows[0].start_at;
+			let { start_at, progress_status, duration, plan_id } = req.body;
+
+			if (duration === undefined || duration === '') {
+				duration = oldduration;
+			}
+			if (start_at === undefined || start_at === '') {
+				start_at = oldstart_at;
+			}
+			console.log("1")
+			sql.query(`update "foundation_plan" SET started_at = $1,duration = $2, progress_status = $3 WHERE id = $4;`,
+				[start_at, duration, progress_status, plan_id], async (err, result) => {
+					if (err) {
+						console.log(err);
+						res.json({
+							message: "Try Again",
+							status: false,
+							err
+						});
+					} else {
+						if (result.rowCount === 1) {
+							sql.query(`CREATE TABLE IF NOT EXISTS public.manage_foundation_plan (
+								id SERIAL NOT NULL,
+								user_id integer,
+								plan_id integer,
+								skills_id_completed integer[],
+								skill_id_on_going integer,
+								started_at timestamp,
+								exercises_id integer[],
+								plan_status text ,
+								duration text,
+								createdAt timestamp,
+								updatedAt timestamp ,
+								PRIMARY KEY (id))  ` , async (err, result) => {
+								if (err) {
+									res.json({
+										message: "Try Again",
+										status: false,
+										err
+									});
+								} else {
+									if (!req.body.plan_id || req.body.plan_id === '') {
+										res.json({
+											message: "Please Enter plan_id",
+											status: false,
+										});
+									} else {
+										const { user_id, plan_id, started_at, progress_status,
+											duration } = req.body;
+
+
+
+											const CheckStreak = await sql.query(`select * from "check_streak" where user_id = $1`, [user_id]);
+											if (CheckStreak.rowCount > 0) {
+												let oldstreak_start_date = CheckStreak.rows[0].streak_start_date;
+												const check = await sql.query(`SELECT AGE(start_at, 'NOW()') AS difference FROM check_streak where user_id = $1`, [req.body.user_id]);
+												console.log(check.rows);
+												if (check.rowCount > 0) {
+													if (check.rows[0].difference.days) {
+														if (check.rows[0].difference.days > 1) {
+															oldstreak_start_date = started_at;
+														}
+													}
+												}
+												if (oldstreak_start_date === null) {
+													oldstreak_start_date = started_at
+												}
+												const query = `UPDATE "check_streak" SET  start_at = $1 , streak_start_date = $2`;
+												const foundResult = await sql.query(query, [started_at, oldstreak_start_date]);
+											} else {
+												const query = `INSERT INTO "check_streak" (id, user_id ,start_at, streak_start_date  ,createdat ,updatedat )
+													VALUES (DEFAULT, $1, $2,$3, 'NOW()','NOW()' ) `;
+												const foundResult = await sql.query(query, [user_id, started_at, started_at]);
+											}
+	
+
+
+
+
+										const managePlan = await sql.query(`select * from "manage_foundation_plan" 
+											where plan_id = $1 AND user_id = $2`, [req.body.plan_id, req.body.user_id]);
+										if (managePlan.rowCount > 0) {
+
+											const managePlan = await sql.query(`update "manage_foundation_plan" SET skills_id_completed = $1,
+											skill_id_on_going = $2, exercises_id = $3,started_at = $4,  plan_status = $5 ,duration=$6 
+											WHERE plan_id = $7 AND user_id = $8;`,
+												[[], null, [], started_at, progress_status, duration,
+												req.body.plan_id, req.body.user_id]);
+											if (managePlan.rowCount > 0) {
+												const updatedPlan = await sql.query(`select * from "manage_foundation_plan" where plan_id = $1 AND user_id = $2`, [req.body.plan_id, req.body.user_id]);
+												res.json({
+													message: "Foundation Plan Re-Started (Progress 0%) Successfully!",
+													status: true,
+													result: updatedPlan.rows
+												});
+											} else {
+												res.json({
+													message: "Try Again",
+													status: false,
+													err
+												});
+											}
+										} else {
+											const query = `INSERT INTO "manage_foundation_plan"
+										 (id, user_id, plan_id, skills_id_completed, skill_id_on_going, started_at,
+											exercises_id, plan_status ,duration ,createdAt ,updatedAt )
+													VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8, 'NOW()','NOW()' ) RETURNING * `;
+											const foundResult = await sql.query(query,
+												[user_id, plan_id, [], null, started_at, [], progress_status, duration]);
+
+											if (foundResult.rows.length > 0) {
+												if (err) {
+													res.json({
+														message: "Try Again",
+														status: false,
+														err
+													});
+												}
+												else {
+													res.json({
+														message: "Foundation Plan Started Successfully!",
+														status: true,
+														result: foundResult.rows,
+													});
+												}
+											} else {
+												res.json({
+													message: "Try Again",
+													status: false,
+													err
+												});
+											}
+										}
+
+									};
+								}
+
+							});
+						} else if (result.rowCount === 0) {
+							res.json({
+								message: "Not Found",
+								status: false,
+							});
+						}
+					}
+				});
+		} else {
+			res.json({
+				message: "Not Found",
+				status: false,
+			});
+		}
+	}
+}
+FoundationPlan.updateStartedPlan = async (req, res) => {
+	if (req.body.plan_id === '') {
+		res.json({
+			message: "plan_id is required",
+			status: false,
+		});
+	} else if (req.body.user_id === '') {
+		res.json({
+			message: "user_id is required",
+			status: false,
+		});
+	} else {
+		const RelaxationMusicData = await sql.query(`select * from "foundation_plan" where id = $1`, [req.body.plan_id]);
+		if (RelaxationMusicData.rowCount > 0) {
+			const RelaxationMusic = await sql.query(`select * from "manage_foundation_plan" where plan_id = $1 AND user_id = $2`, [req.body.plan_id, req.body.user_id]);
+			if (RelaxationMusic.rowCount > 0) {
+				const Oldskills_id_completed = RelaxationMusic.rows[0].skills_id_completed;
+				const Oldskill_id_on_going = RelaxationMusic.rows[0].skill_id_on_going;
+				const Oldstarted_at = RelaxationMusic.rows[0].started_at;
+				const Oldexercises_id = RelaxationMusic.rows[0].exercises_id;
+				const Oldplan_status = RelaxationMusic.rows[0].plan_status;
+				const Oldduration = RelaxationMusic.rows[0].duration;
+
+				let { id, user_id, plan_id, skills_id_completed, skill_id_on_going, started_at, exercises_id, progress_status, duration } = req.body;
+
+				if (skills_id_completed === undefined || skills_id_completed === '') {
+					skills_id_completed = Oldskills_id_completed;
+				}
+				if (skill_id_on_going === undefined || skill_id_on_going === '') {
+					skill_id_on_going = Oldskill_id_on_going;
+				}
+				console.log(started_at);
+				if (started_at === undefined || started_at === '') {
+					started_at = Oldstarted_at;
+					console.log("started_at");
+
+				}
+				console.log(started_at);
+
+				if (exercises_id === undefined || exercises_id === '') {
+					exercises_id = Oldexercises_id;
+				}
+				if (progress_status === undefined || progress_status === '') {
+					progress_status = Oldplan_status;
+				}
+
+
+				if (duration === undefined || duration === '') {
+					duration = Oldduration;
+				}
+				console.log(RelaxationMusic.rows[0].id);
+				sql.query(`update "manage_foundation_plan" SET skills_id_completed = $1,
+				skill_id_on_going = $2, exercises_id = $3,started_at = $4,  plan_status = $5 ,duration=$6 WHERE id = $7;`,
+					[skills_id_completed, skill_id_on_going, exercises_id, started_at, progress_status, duration,
+						RelaxationMusic.rows[0].id], async (err, result) => {
+							if (err) {
+								console.log(err);
+								res.json({
+									message: "Try Again",
+									status: false,
+									err
+								});
+							} else {
+								if (result.rowCount === 1) {
+									const updatedPlan = await sql.query(`select * from "manage_foundation_plan" where plan_id = $1 AND user_id = $2`, [req.body.plan_id, req.body.user_id]);
+									res.json({
+										message: "Foundation Plan Updated Successfully!",
+										status: true,
+										result: updatedPlan.rows
+									});
+								} else if (result.rowCount === 0) {
+									res.json({
+										message: "Not Found",
+										status: false,
+									});
+								}
+							}
+						});
+			} else {
+				res.json({
+					message: "Not Found",
+					status: false,
+				});
+			}
+		} else {
+			res.json({
+				message: "Not Found",
+				status: false,
+			});
+		}
+	}
+}
+FoundationPlan.viewProgress_plan_skill_user = async (req, res) => {
+	const data = await sql.query(`select * from "manage_foundation_plan" where 
+	plan_id = $1 AND user_id = $2`, [req.body.plan_id, req.body.user_id]);
+	if (data.rowCount > 0) {
+		let status = 'not started';
+
+
+		for (let i = 0; i < data.rows[0].skills_id_completed.length; i++) {
+			if (data.rows[0].skills_id_completed[i] == req.body.skill_id) {
+				status = 'Completed';
+			}
+		}
+
+		if (data.rows[0].skill_id_on_going == req.body.skill_id) {
+			status = '(start) On Going';
+		}
+		res.json({
+			message: "Skill in that Plan status",
+			status: true,
+			result: status,
+		});
+	} else {
+		res.json({
+			message: "Plan with that user isn't available",
+			status: false,
+		});
+
+	}
+
+}
+FoundationPlan.view_completed_skills_plan = async (req, res) => {
+	const data = await sql.query(`select * from "manage_foundation_plan" where 
+	plan_id = $1 AND user_id = $2`, [req.body.plan_id, req.body.user_id]);
+	if (data.rowCount > 0) {
+		const skills = await sql.query(`SELECT  
+					 (
+					   SELECT json_agg( 
+						  json_build_object('id', s.id,'skill_name', s.skill_name,
+						  'skill_icon', s.icon,'skill_description', s.discription,
+						  'skill_benefit', s.benefit,'skill_createdat', s.createdat
+						  )
+							  )
+							  FROM skill s
+							   WHERE s.id = ANY(mp.skills_id_completed)
+								) AS skills
+					   FROM manage_foundation_plan mp WHERE
+					   plan_id = $1 AND user_id = $2`, [req.body.plan_id, req.body.user_id]);
+		if (data.rowCount > 0) {
+
+			res.json({
+				message: "All Completed Skill in that Plan",
+				status: true,
+				result: skills.rows
+			});
+
+		} else {
+			res.json({
+				message: "Try Again",
+				status: false,
+			});
+		}
+	} else {
+		res.json({
+			message: "Plan with that user isn't available",
+			status: false,
+		});
+
+	}
+
+}
+FoundationPlan.view_completed_skills_User = async (req, res) => {
+	const data = await sql.query(`select * from "manage_foundation_plan" where 
+	user_id = $1`, [req.body.user_id]);
+	if (data.rowCount > 0) {
+		const skills = await sql.query(`SELECT  
+					 (
+					   SELECT json_agg( 
+						  json_build_object('id', s.id,'skill_name', s.skill_name,
+						  'skill_icon', s.icon,'skill_description', s.discription,
+						  'skill_benefit', s.benefit,'skill_createdat', s.createdat
+						  )
+							  )
+							  FROM skill s
+							   WHERE s.id = ANY(mp.skills_id_completed)
+								) AS skills
+					   FROM manage_foundation_plan mp WHERE
+					    user_id = $1`, [req.body.user_id]);
+		if (data.rowCount > 0) {
+
+			res.json({
+				message: "All Completed Skill by a User",
+				status: true,
+				result: skills.rows
+			});
+
+		} else {
+			res.json({
+				message: "Try Again",
+				status: false,
+			});
+		}
+	} else {
+		res.json({
+			message: "Plan with that user isn't available",
+			status: false,
+		});
+
+	}
+
+}
+FoundationPlan.view_completed_Exercises_User = async (req, res) => {
+	const data = await sql.query(`select * from "manage_foundation_plan" where 
+	user_id = $1`, [req.body.user_id]);
+	if (data.rowCount > 0) {
+		const skills = await sql.query(`SELECT  
+					 (
+					   SELECT json_agg( 
+						  json_build_object('id', s.id,'exercise_name', s.name,
+						  'description', s.description,'animations', s.animations,
+						  'audio_file', s.audio_file,'exercise_createdat', s.createdat
+						  )
+							  )
+							  FROM exercise s
+							   WHERE s.id = ANY(mp.exercises_id)
+								) AS exercise
+					   FROM manage_foundation_plan mp WHERE
+					    user_id = $1`, [req.body.user_id]);
+		if (data.rowCount > 0) {
+
+			res.json({
+				message: "All Completed Exercises by a User",
+				status: true,
+				result: skills.rows
+			});
+
+		} else {
+			res.json({
+				message: "Try Again",
+				status: false,
+			});
+		}
+	} else {
+		res.json({
+			message: "Plan with that user isn't available",
+			status: false,
+		});
+
+	}
+
+}
+FoundationPlan.view_All_Exercises_User = async (req, res) => {
+	const data = await sql.query(`select * from "manage_foundation_plan" where 
+	user_id = $1`, [req.body.user_id]);
+	if (data.rowCount > 0) {
+		const skills = await sql.query(`SELECT  
+					 (
+					   SELECT json_agg( 
+						  json_build_object('id', s.id,'exercise_name', s.name,
+						  'description', s.description,'animations', s.animations,
+						  'audio_file', s.audio_file,'exercise_createdat', s.createdat
+						  )
+							  )
+							  FROM exercise s
+							   WHERE s.id = ANY(MMP.plan_exercises)
+								) AS exercise
+					   FROM manage_foundation_plan  mp JOIN  foundation_plan MMP 
+					   ON mp.plan_id  = MMP.id WHERE
+					   mp.user_id = $1 ORDER BY MMP.createdat DESC`, [req.body.user_id]);
+		if (data.rowCount > 0) {
+
+			res.json({
+				message: "All Exercises by a User",
+				status: true,
+				result: skills.rows
+			});
+
+		} else {
+			res.json({
+				message: "Try Again",
+				status: false,
+			});
+		}
+	} else {
+		res.json({
+			message: "Plan with that user isn't available",
+			status: false,
+		});
+
+	}
+
+}
+
+FoundationPlan.quitPlan = async (req, res) => {
+	const data = await sql.query(`select * from "manage_foundation_plan" where 
+	user_id = $1 AND plan_id  = $2`, [req.body.user_id, req.body.plan_id]);
+	if (data.rows.length === 1) {
+		sql.query(`DELETE FROM "manage_foundation_plan" where 
+		user_id = $1 AND plan_id  = $2`, [req.body.user_id, req.body.plan_id], (err, result) => {
+			if (err) {
+				res.json({
+					message: "Try Again",
+					status: false,
+					err
+				});
+			} else {
+				res.json({
+					message: "Foundation Plan Quit Successfully!",
+					status: true,
+					result: data.rows,
+
+				});
+			}
+		});
+	} else {
+		res.json({
+			message: "Not Found",
+			status: false,
+		});
+	}
+}
 
 
 
 module.exports = FoundationPlan;
-
-//// create api to add a Foundation Plan
-// create api to delete a Foundation Plan
-// create api to search Foundation Plan
-// create api to update Foundation Plan
-// create api to get history of all Foundation Plan by a user
-// create api to get all Foundation Plans
-// create api to get a Foundation Plan by id
-// create api to get all plans by completing skills
-// create api to get all plans completed by a user
-// create api to get all plans started by a user
-// create api to change the plan status
-
-
-
-// create api to start a plan
-// create api to pause a plan
-// create api to resume a plan
-// create api to stop a plan
-// create api to quit a plan
-// create api to restart  plan
-

@@ -4,7 +4,11 @@ const { sql } = require("../config/db.config");
 const waterTracking = function (waterTracking) {
 	this.user_id = waterTracking.user_id;
 	this.capacity = waterTracking.capacity;
-	this.unit = waterTracking.unit
+	this.start_at = waterTracking.start_at;
+	this.week_starts = waterTracking.week_days;
+	this.daily_intake = waterTracking.daily_intake;
+	this.weekly_intake = waterTracking.weekly_intake;
+
 };
 
 waterTracking.create = async (req, res) => {
@@ -12,7 +16,10 @@ waterTracking.create = async (req, res) => {
         id SERIAL NOT NULL,
 		user_id integer,
         capacity text ,
-        unit text,
+		start_at timestamp,
+		week_starts  timestamp,
+		daily_intake integer,
+		weekly_intake  integer,
         createdAt timestamp,
         updatedAt timestamp ,
         PRIMARY KEY (id))  ` , async (err, result) => {
@@ -23,66 +30,15 @@ waterTracking.create = async (req, res) => {
 				err
 			});
 		} else {
-			const { user_id, capacity,unit } = req.body;
-			if(capacity === undefined || capacity === null || capacity === '') {
+			const { user_id, capacity, start_at, daily_intake, weekly_intake } = req.body;
+			if (capacity === undefined || capacity === null || capacity === '') {
 				capacity = '2000';
-				unit = 'ml';
 			}
 			const query = `INSERT INTO "water_tracking"
-				 (id,user_id, capacity,unit,createdAt ,updatedAt )
-                            VALUES (DEFAULT, $1, $2, $3,'NOW()','NOW()' ) RETURNING * `;
+				 (id,user_id, capacity,start_at,daily_intake,weekly_intake,createdAt ,updatedAt )
+                            VALUES (DEFAULT, $1, $2,$3,$4,$5,'NOW()','NOW()' ) RETURNING * `;
 			const foundResult = await sql.query(query,
-				[user_id, capacity, unit]);
-			if (foundResult.rows.length > 0) {
-				if (err) {
-					res.json({
-						message: "Try Again",
-						status: false,
-						err
-					});
-				}
-				else {
-					res.json({
-						message: "water Tracking Added Successfully!",
-						status: true,
-						result: foundResult.rows,
-					});
-				}
-			} else {
-				res.json({
-					message: "Try Again",
-					status: false,
-					err
-				});
-			}
-
-		};
-	});
-}
-
-
-waterTracking.dailyGoal = async (req, res) => {
-	sql.query(`CREATE TABLE IF NOT EXISTS public.daily_goal (
-        id SERIAL NOT NULL,
-		user_id integer,
-        tracker_id integer ,
-        createdAt timestamp,
-        updatedAt timestamp ,
-        PRIMARY KEY (id))  ` , async (err, result) => {
-		if (err) {
-			res.json({
-				message: "Try Again",
-				status: false,
-				err
-			});
-		} else {
-			const { user_id, tracker_id } = req.body;
-
-			const query = `INSERT INTO "daily_goal"
-				 (id,user_id, tracker_id,createdAt ,updatedAt )
-                            VALUES (DEFAULT, $1, $2,'NOW()','NOW()' ) RETURNING * `;
-			const foundResult = await sql.query(query,
-				[user_id, tracker_id]);
+				[user_id, capacity, start_at, 0, 0]);
 			if (foundResult.rows.length > 0) {
 				if (err) {
 					res.json({
@@ -109,24 +65,22 @@ waterTracking.dailyGoal = async (req, res) => {
 		};
 	});
 }
-
-
-waterTracking.updateDailyGoal = async (req, res) => {
+waterTracking.update = async (req, res) => {
 	if (req.body.id === '') {
 		res.json({
 			message: "id is required",
 			status: false,
 		});
 	} else {
-		const waterTrackingData = await sql.query(`select * from "daily_goal" where id = $1`, [req.body.id]);
-		const oldtracker_id = waterTrackingData.rows[0].tracker_id;
-		let { tracker_id,id } = req.body;
-
-		if (tracker_id === undefined || tracker_id === '') {
-			tracker_id = oldtracker_id;
+		const waterTrackingData = await sql.query(`select * from "water_tracking" where id = $1`, [req.body.id]);
+		const oldcapacity = waterTrackingData.rows[0].capacity;
+		let { capacity, id } = req.body;
+		if (capacity === undefined || capacity === '') {
+			capacity = oldcapacity;
 		}
-		sql.query(`UPDATE "daily_goal" SET tracker_id =  $1 WHERE id = $2;`,
-			[tracker_id, id], async (err, result) => {
+		sql.query(`UPDATE "water_tracking" SET 
+		capacity =  $1  WHERE id = $2;`,
+			[capacity, id], async (err, result) => {
 				if (err) {
 					console.log(err);
 					res.json({
@@ -136,9 +90,9 @@ waterTracking.updateDailyGoal = async (req, res) => {
 					});
 				} else {
 					if (result.rowCount === 1) {
-						const data = await sql.query(`select * from "daily_goal" where id = $1`, [req.body.id]);
+						const data = await sql.query(`select * from "water_tracking" where id = $1`, [req.body.id]);
 						res.json({
-							message: "Daily Goal Updated Successfully!",
+							message: "set Daily Goal Successfully!",
 							status: true,
 							result: data.rows,
 						});
@@ -153,9 +107,34 @@ waterTracking.updateDailyGoal = async (req, res) => {
 	}
 }
 
-waterTracking.viewDailyGoal = (req, res) => {
-	sql.query(`SELECT "daily_goal".*, "water_tracking".*  FROM "daily_goal" JOIN "water_tracking" 
-	  ON "daily_goal".tracker_id = "water_tracking".id WHERE ( "daily_goal".user_id = $1)`, [req.body.user_id], (err, result) => {
+waterTracking.delete = async (req, res) => {
+	const data = await sql.query(`select * from "water_tracking" where id = $1`, [req.params.id]);
+	if (data.rows.length === 1) {
+		sql.query(`DELETE FROM "water_tracking" WHERE id = $1;`, [req.params.id], (err, result) => {
+			if (err) {
+				res.json({
+					message: "Try Again",
+					status: false,
+					err
+				});
+			} else {
+				res.json({
+					message: "Daily Goal Deleted Successfully!",
+					status: true,
+					result: data.rows,
+
+				});
+			}
+		});
+	} else {
+		res.json({
+			message: "Not Found",
+			status: false,
+		});
+	}
+}
+waterTracking.viewSpecific = (req, res) => {
+	sql.query(`SELECT * FROM "water_tracking" WHERE ( user_id = $1 AND id = $2)`, [req.body.user_id, req.body.tracker_id], (err, result) => {
 		if (err) {
 			console.log(err);
 			res.json({
@@ -173,9 +152,154 @@ waterTracking.viewDailyGoal = (req, res) => {
 	});
 }
 
+//start Water tracking
+waterTracking.dailyGoal = async (req, res) => {
+	const waterTrackingData = await sql.query(`select * from "water_tracking" where id = $1`, [req.body.tracker_id]);
+	if (waterTrackingData.rowCount > 0) {
+		const { user_id, tracker_id, start_at, daily_intake } = req.body;
+		const addStart_at = `UPDATE "water_tracking" SET start_at =  $1 
+			 WHERE user_id = $2 AND id = $3; `;
+		const found = await sql.query(addStart_at,
+			[start_at, user_id, tracker_id]);
 
-waterTracking.viewSpecific = (req, res) => {
-	sql.query(`SELECT * FROM "water_tracking" WHERE ( user_id = $1 AND id = $2)`, [req.body.user_id, req.body.tracker_id ], (err, result) => {
+		const check = await sql.query(`SELECT AGE(start_at, 'NOW()') AS difference FROM water_tracking where id = $1`, [req.body.tracker_id]);
+		let oldWeekly_intake = waterTrackingData.rows[0].weekly_intake;
+		let week_starts = waterTrackingData.rows[0].week_starts;
+		if (check.rowCount > 0) {
+			if (check.rows[0].difference.days) {
+				if (check.rows[0].difference.days <= 7) {
+					oldWeekly_intake += parseInt(daily_intake);
+				} else {
+					oldWeekly_intake = 0;
+					week_starts = start_at;
+					oldWeekly_intake += parseInt(daily_intake);
+				}
+			} else {
+				oldWeekly_intake += parseInt(daily_intake);
+			}
+		}
+
+		if (week_starts === null) {
+			week_starts = start_at
+		}
+
+		const query = `UPDATE "water_tracking" SET start_at =  $1 , daily_intake = $2,weekly_intake = $3,
+		week_starts  = $4 WHERE user_id = $5 AND id = $6; `;
+		const foundResult = await sql.query(query,
+			[start_at, daily_intake, oldWeekly_intake, week_starts, user_id, tracker_id]);
+		if (foundResult.rowCount > 0) {
+			const waterTrackingData = await sql.query(`select * from "water_tracking" where id = $1`, [req.body.tracker_id]);
+			res.json({
+				message: "Water Intake Added Successfully!",
+				status: true,
+				result: waterTrackingData.rows,
+			});
+		} else {
+			res.json({
+				message: "Try Again",
+				status: false,
+			});
+		}
+	} else {
+		res.json({
+			message: "Wrong Daily Goal ID",
+			status: false,
+		});
+
+	}
+
+
+}
+
+//update Water tracking
+waterTracking.updateDailyGoal = async (req, res) => {
+	const waterTrackingData = await sql.query(`select * from "water_tracking" where id = $1`, [req.body.tracker_id]);
+	if (waterTrackingData.rowCount > 0) {
+		const check = await sql.query(`SELECT AGE(start_at, 'NOW') AS difference FROM water_tracking where id = $1`, [req.body.tracker_id]);
+		if (check.rows[0].difference.days) {
+			res.json({
+				message: "New Day, Start Water Intake Again!",
+				status: false,
+			});
+		} else {
+			const { user_id, tracker_id, daily_intake } = req.body;
+			let oldDaily_intake = waterTrackingData.rows[0].daily_intake;
+			oldDaily_intake += parseInt(daily_intake);
+			let oldWeekly_intake = waterTrackingData.rows[0].weekly_intake;
+			oldWeekly_intake += parseInt(daily_intake);
+			const query = `UPDATE "water_tracking" SET daily_intake = $1,weekly_intake = $2
+			 WHERE user_id = $3 AND id = $4; `;
+			const foundResult = await sql.query(query,
+				[oldDaily_intake, oldWeekly_intake, user_id, tracker_id]);
+			if (foundResult.rowCount > 0) {
+				const waterTrackingData = await sql.query(`select * from "water_tracking" where id = $1`, [req.body.tracker_id]);
+				res.json({
+					message: "Water Intake Updated Successfully!",
+					status: true,
+					result: waterTrackingData.rows,
+				});
+			} else {
+				res.json({
+					message: "Try Again",
+					status: false,
+				});
+			}
+		}
+	} else {
+		res.json({
+			message: "Wrong Daily Goal ID",
+			status: false,
+		});
+
+	}
+
+
+}
+
+// waterTracking.updateDailyGoal = async (req, res) => {
+// 	if (req.body.id === '') {
+// 		res.json({
+// 			message: "id is required",
+// 			status: false,
+// 		});
+// 	} else {
+// 		const waterTrackingData = await sql.query(`select * from "daily_goal" where id = $1`, [req.body.id]);
+// 		const oldtracker_id = waterTrackingData.rows[0].tracker_id;
+// 		let { tracker_id,id } = req.body;
+
+// 		if (tracker_id === undefined || tracker_id === '') {
+// 			tracker_id = oldtracker_id;
+// 		}
+// 		sql.query(`UPDATE "daily_goal" SET tracker_id =  $1 WHERE id = $2;`,
+// 			[tracker_id, id], async (err, result) => {
+// 				if (err) {
+// 					console.log(err);
+// 					res.json({
+// 						message: "Try Again",
+// 						status: false,
+// 						err
+// 					});
+// 				} else {
+// 					if (result.rowCount === 1) {
+// 						const data = await sql.query(`select * from "daily_goal" where id = $1`, [req.body.id]);
+// 						res.json({
+// 							message: "Daily Goal Updated Successfully!",
+// 							status: true,
+// 							result: data.rows,
+// 						});
+// 					} else if (result.rowCount === 0) {
+// 						res.json({
+// 							message: "Not Found",
+// 							status: false,
+// 						});
+// 					}
+// 				}
+// 			});
+// 	}
+// }
+waterTracking.viewDailyGoal = (req, res) => {
+	sql.query(`SELECT "daily_goal".*, "water_tracking".*  FROM "daily_goal" JOIN "water_tracking" 
+	  ON "daily_goal".tracker_id = "water_tracking".id WHERE ( "daily_goal".user_id = $1)`, [req.body.user_id], (err, result) => {
 		if (err) {
 			console.log(err);
 			res.json({
@@ -185,7 +309,7 @@ waterTracking.viewSpecific = (req, res) => {
 			});
 		} else {
 			res.json({
-				message: "water Tracking of a User",
+				message: "Daily Goal of a User",
 				status: true,
 				result: result.rows
 			});
@@ -222,81 +346,4 @@ waterTracking.viewAll = async (req, res) => {
 	}
 }
 
-
-
-waterTracking.update = async (req, res) => {
-	if (req.body.id === '') {
-		res.json({
-			message: "id is required",
-			status: false,
-		});
-	} else {
-		const waterTrackingData = await sql.query(`select * from "water_tracking" where id = $1`, [req.body.id]);
-		const oldunit = waterTrackingData.rows[0].unit;
-		const oldcapacity = waterTrackingData.rows[0].capacity;
-		let { unit, capacity, id } = req.body;
-
-		if (unit === undefined || unit === '') {
-			unit = oldunit;
-		}
-
-		if (capacity === undefined || capacity === '') {
-			capacity = oldcapacity;
-		}
-		sql.query(`UPDATE "water_tracking" SET unit =  $1, 
-		capacity =  $2  WHERE id = $3;`,
-			[unit, capacity, id], async (err, result) => {
-				if (err) {
-					console.log(err);
-					res.json({
-						message: "Try Again",
-						status: false,
-						err
-					});
-				} else {
-					if (result.rowCount === 1) {
-						const data = await sql.query(`select * from "water_tracking" where id = $1`, [req.body.id]);
-						res.json({
-							message: "water Tracking Updated Successfully!",
-							status: true,
-							result: data.rows,
-						});
-					} else if (result.rowCount === 0) {
-						res.json({
-							message: "Not Found",
-							status: false,
-						});
-					}
-				}
-			});
-	}
-}
-
-
-waterTracking.delete = async (req, res) => {
-	const data = await sql.query(`select * from "water_tracking" where id = $1`, [req.params.id]);
-	if (data.rows.length === 1) {
-		sql.query(`DELETE FROM "water_tracking" WHERE id = $1;`, [req.params.id], (err, result) => {
-			if (err) {
-				res.json({
-					message: "Try Again",
-					status: false,
-					err
-				});
-			} else {
-				res.json({
-					message: "water Tracking Deleted Successfully!",
-					status: true,
-					result: data.rows,
-
-				});
-			}
-		});
-	} else {
-		res.json({
-			message: "Not Found",
-			status: false,
-		});
-	}
-}
 module.exports = waterTracking;

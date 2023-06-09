@@ -83,7 +83,7 @@ Goal.viewSpecific = (req, res) => {
 
 Goal.viewAll = async (req, res) => {
 	const data = await sql.query(`SELECT COUNT(*) AS count FROM "goal"`);
-	let limit = '10';
+	let limit = req.body.limit;
 	let page = req.body.page;
 	let result;
 	if (!page || !limit) {

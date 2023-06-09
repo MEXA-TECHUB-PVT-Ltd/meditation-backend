@@ -127,3 +127,82 @@ exports.search = (req, res) => {
   }  
   FoundationPlan.search( req, res);
 };
+
+
+exports.start = (req, res) => {
+  if (!req.body) {
+    res.json({
+      message: "Content can not be empty!",
+      status: false,
+     });
+  }  
+  FoundationPlan.start( req, res);
+};
+
+exports.updateStartedPlan = (req, res) => {
+  if (!req.body) {
+    res.json({
+      message: "Content can not be empty!",
+      status: false,
+     });
+  }  
+  FoundationPlan.updateStartedPlan( req, res);
+};
+
+exports.view_completed_skills_User = (req, res) => {
+  if (!req.body) {
+    res.json({
+      message: "Content can not be empty!",
+      status: false,
+     });
+  }  
+  FoundationPlan.view_completed_skills_User( req, res);
+};
+exports.quitPlan = (req, res) => {
+  if (!req.body) {
+    res.json({
+      message: "Content can not be empty!",
+      status: false,
+     });
+  }  
+  FoundationPlan.quitPlan( req, res);
+};
+exports.view_completed_Exercises_User = (req, res) => {
+  if (!req.body) {
+    res.json({
+      message: "Content can not be empty!",
+      status: false,
+     });
+  }  
+  FoundationPlan.view_completed_Exercises_User( req, res);
+};
+
+exports.view_All_Exercises_User = (req, res) => {
+  if (!req.body) {
+    res.json({
+      message: "Content can not be empty!",
+      status: false,
+     });
+  }  
+  FoundationPlan.view_All_Exercises_User( req, res);
+};
+
+exports.view_completed_skills_plan = (req, res) => {
+  if (!req.body) {
+    res.json({
+      message: "Content can not be empty!",
+      status: false,
+     });
+  }  
+  FoundationPlan.view_completed_skills_plan( req, res);
+};
+
+exports.viewProgress_plan_skill_user = (req, res) => {
+  if (!req.body) {
+    res.json({
+      message: "Content can not be empty!",
+      status: false,
+     });
+  }  
+  FoundationPlan.viewProgress_plan_skill_user( req, res);
+};

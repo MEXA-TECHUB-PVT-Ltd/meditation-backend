@@ -19,6 +19,16 @@ router.post("/view_all", FoundationPlan.viewAll);
 router.put("/update", FoundationPlan.update);
 router.delete("/delete/:id" , FoundationPlan.delete)
 router.post("/change_plan_status", FoundationPlan.changePlanStatus);
+router.delete("/quit_plan", FoundationPlan.quitPlan);
+router.put("/start", FoundationPlan.start);
+router.put("/update_started_plan", FoundationPlan.updateStartedPlan);
+router.post("/view_progress_plan_skill_user", FoundationPlan.viewProgress_plan_skill_user);
+router.post("/view_completed_skills_plan", FoundationPlan.view_completed_skills_plan);
+router.post("/view_completed_skills_User", FoundationPlan.view_completed_skills_User);
+router.post("/view_completed_Exercises_User", FoundationPlan.view_completed_Exercises_User);
+router.post("/view_All_Exercises_User", FoundationPlan.view_All_Exercises_User);
+
+
 
 app.use("/foundation_plan", router);
 };

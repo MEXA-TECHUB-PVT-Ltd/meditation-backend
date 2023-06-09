@@ -34,6 +34,7 @@ require("./app/routes/FoundationPlan")(app);
 require("./app/routes/Reminder")(app);
 require("./app/routes/waterTracking")(app);
 require("./app/routes/Favorites")(app);
+require("./app/routes/Badge")(app);
 
 // set port, listen for requests
 const PORT = process.env.PORT || 3007;
