@@ -231,6 +231,26 @@ Skill.update = async (req, res) => {
 	}
 }
 
+Skill.search = async (req, res) => {
+	sql.query(`SELECT * FROM "skill" WHERE skill_name ILIKE  $1 OR status ILIKE  $1 ORDER BY "createdat" DESC `
+		, [`${req.body.skill_name}%`], (err, result) => {
+			if (err) {
+				console.log(err);
+				res.json({
+					message: "Try Again",
+					status: false,
+					err
+				});
+			} else {
+				res.json({
+					message: "Search's skill data",
+					status: true,
+					result: result.rows,
+				});
+			}
+		});
+}
+
 
 Skill.delete = async (req, res) => {
 	const data = await sql.query(`select * from "skill" where id = $1`, [req.params.id]);

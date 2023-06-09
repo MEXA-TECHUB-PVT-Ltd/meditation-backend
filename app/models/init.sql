@@ -9,13 +9,19 @@ CREATE TABLE IF NOT EXISTS public.admin (
 CREATE TABLE IF NOT EXISTS public.User (
         id SERIAL NOT NULL,
         username text,
-        email   text,
+        email text,
         password text,
+        gender text,
+        level text,
+        goals text[],
+        age text,
+        badge_id integer,
         image   text ,
         status text,
         createdAt timestamp,
         updatedAt timestamp ,
         PRIMARY KEY (id));
+
 
 CREATE TABLE IF NOT EXISTS public.otp (
             id SERIAL,
@@ -157,10 +163,23 @@ CREATE TABLE IF NOT EXISTS public.water_tracking (
         id SERIAL NOT NULL,
         user_id integer,
         capacity text ,
-        unit text,
+        start_at timestamp,
+        week_starts  timestamp,
+        daily_intake integer,
+        weekly_intake  integer,
         createdAt timestamp,
         updatedAt timestamp ,
         PRIMARY KEY (id));
+
+CREATE TABLE IF NOT EXISTS public.check_badge (
+        id SERIAL NOT NULL,
+        user_id integer,
+        badge_id text ,
+        createdAt timestamp,
+        updatedAt timestamp ,
+        PRIMARY KEY (id));
+
+
 
 CREATE TABLE IF NOT EXISTS public.favorites  (
         id SERIAL NOT NULL,
@@ -169,5 +188,16 @@ CREATE TABLE IF NOT EXISTS public.favorites  (
         fav_type text,
         createdAt timestamp ,
         updatedAt timestamp  ,
-        PRIMARY KEY (id)) 
+        PRIMARY KEY (id));
+
+
+
+CREATE TABLE IF NOT EXISTS public.check_streak (
+        id SERIAL NOT NULL,
+        user_id integer,
+        streak_start_date timestamp,
+        start_at timestamp,
+        createdAt timestamp,
+        updatedAt timestamp ,
+        PRIMARY KEY (id));
 

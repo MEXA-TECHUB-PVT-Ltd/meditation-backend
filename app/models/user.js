@@ -13,8 +13,13 @@ User.create = async (req, res) => {
 	sql.query(`CREATE TABLE IF NOT EXISTS public.User (
         id SERIAL NOT NULL,
         username text,
-        email   text,
+        email text,
 		password text,
+		gender text,
+		level text,
+		goals text[],
+		age text,
+		badge_id integer,
         image   text ,
         status text,
         createdAt timestamp,
@@ -46,7 +51,7 @@ User.create = async (req, res) => {
 						status: false,
 					});
 				} else if (checkResult.rows.length === 0) {
-					const { username, email, password } = req.body;
+					const { username, email, password,gender,level,goals ,age,badge_id} = req.body;
 					const salt = await bcrypt.genSalt(10);
 					let hashpassword = await bcrypt.hash(password, salt);
 					let photo = '';
@@ -56,10 +61,10 @@ User.create = async (req, res) => {
 						photo = path;
 					}
 		
-					const query = `INSERT INTO "user" (id, username ,email,password, image, status  ,createdat ,updatedat )
-                            VALUES (DEFAULT, $1, $2,$3, $4, $5 , 'NOW()','NOW()' ) RETURNING * `;
+					const query = `INSERT INTO "user" (id, username ,email,password, gender, level ,goals,age, badge_id,image, status  ,createdat ,updatedat )
+                            VALUES (DEFAULT, $1, $2,$3, $4, $5 ,$6,$7,$8,$9,$10, 'NOW()','NOW()' ) RETURNING * `;
 					const foundResult = await sql.query(query,
-						[username, email, hashpassword, photo,'unblock']);
+						[username, email, hashpassword, gender, level, goals, age , badge_id,photo,'unblock']);
 					if (foundResult.rows.length > 0) {
 						if (err) {
 							res.json({
@@ -72,6 +77,12 @@ User.create = async (req, res) => {
 							const token = jwt.sign({ id: foundResult.rows[0].id }, 'IhTRsIsUwMyHAmKsA', {
 								expiresIn: "7d",
 							});
+							console.log(foundResult.rows);
+							const query = `INSERT INTO "streak"
+							(id,count, user_id ,current_date_Time,createdAt ,updatedAt )
+									   VALUES (DEFAULT, $1, $2, $3,'NOW()','NOW()' ) RETURNING * `;
+						   const Streak = await sql.query(query,
+							   ['0', foundResult.rows[0].id, foundResult.rows[0].createdat]);
 							res.json({
 								message: "User Added Successfully!",
 								status: true,
@@ -200,17 +211,41 @@ User.updateProfile = async (req, res) => {
 	} else {
 		const userData = await sql.query(`select * from "user" where id = $1`, [req.body.id]);
 		if (userData.rowCount === 1) {
+			let { id, username, email, status,gender, level,goals ,age, badge_id} = req.body;
 
 			const oldName = userData.rows[0].username;
 			const oldEmail = userData.rows[0].email;
 			const password = userData.rows[0].password;
+
+			const Oldgender = userData.rows[0].gender;
+			const Oldlevel = userData.rows[0].level;
+			const Oldgoals = userData.rows[0].goals;
+			const Oldage = userData.rows[0].age;
+			const Oldbadge_id = userData.rows[0].badge_id;
+
+
 			const oldStatus = userData.rows[0].status;
 			let photo = userData.rows[0].image;
 			
-			let { id, username, email, status } = req.body;
 			if (req.file) {
 				const { path } = req.file;
 				photo = path;
+			}
+
+			if (gender === undefined || gender === '') {
+				gender = Oldgender;
+			}
+			if (level === undefined || level === '') {
+				level = Oldlevel;
+			}
+			if (goals === undefined || goals === '') {
+				goals = Oldgoals;
+			}
+			if (badge_id === undefined || badge_id === '') {
+				badge_id = Oldbadge_id;
+			}
+			if (age === undefined || age === '') {
+				age = Oldage;
 			}
 			if (username === undefined || username === '') {
 				username = oldName;
@@ -221,9 +256,22 @@ User.updateProfile = async (req, res) => {
 			if (status === undefined || status === '') {
 				status = oldStatus;
 			}
+			const CheckBadge = await sql.query(`select * from "check_badge" where user_id = $1`, [id]);
+			if(CheckBadge.rowCount > 0){
+				if(CheckBadge.rows[0].badge_id !== badge_id){
+					const query = `UPDATE "check_badge" SET  badge_id = $1 , updatedat  = 'NOW()'`;
+			const foundResult = await sql.query(query,[badge_id]);
+				}
+			}else {
+				const query = `INSERT INTO "check_badge" (id, user_id ,badge_id  ,createdat ,updatedat )
+				VALUES (DEFAULT, $1, $2, 'NOW()','NOW()' ) RETURNING * `;
+		const foundResult = await sql.query(query,
+			[id, badge_id]);
+			}
 			sql.query(`UPDATE "user" SET username = $1, email = $2, 
-		password = $3, image = $4 ,status = $5  WHERE id = $6;`,
-				[username, email, password, photo,status,id], async (err, result) => {
+		password = $3, gender = $4, level = $5, goals = $6, age = $7, badge_id = $8,
+		 image = $9 ,status = $10  WHERE id = $11;`,
+				[username, email, password,gender,level,goals,age, badge_id, photo,status,id], async (err, result) => {
 					if (err) {
 						console.log(err);
 						res.json({
@@ -492,6 +540,14 @@ User.getAllUsers_MonthWise_count = (req, res) => {
 		});
 
 }
+
+
+
+
+
+
+
+
 
 
 module.exports = User;

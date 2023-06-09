@@ -5,6 +5,7 @@ const Exercise = function (Exercise) {
 	this.name = Exercise.name;
 	this.description = Exercise.description;
 	this.animations = Exercise.animations
+	this.status = Exercise.status;
 };
 
 Exercise.create = async (req, res) => {
@@ -14,6 +15,7 @@ Exercise.create = async (req, res) => {
         description text ,
         animations text[],
 		audio_file text,
+		status text,
         createdAt timestamp,
         updatedAt timestamp ,
         PRIMARY KEY (id))  ` , async (err, result) => {
@@ -24,13 +26,13 @@ Exercise.create = async (req, res) => {
 				err
 			});
 		} else {
-			const { name, description } = req.body;
+			const { name, description ,status} = req.body;
 
 			const query = `INSERT INTO "exercise"
-				 (id,name, description,animations,audio_file,createdAt ,updatedAt )
-                            VALUES (DEFAULT, $1, $2, $3, $4,'NOW()','NOW()' ) RETURNING * `;
+				 (id,name, description,animations,audio_file,status,createdAt ,updatedAt )
+                            VALUES (DEFAULT, $1, $2, $3, $4,$5, 'NOW()','NOW()' ) RETURNING * `;
 			const foundResult = await sql.query(query,
-				[name, description, [''],'']);
+				[name, description, [''],''], status);
 			if (foundResult.rows.length > 0) {
 				if (err) {
 					res.json({
@@ -149,9 +151,6 @@ Exercise.search = async (req, res) => {
 			}
 		});
 }
-
-
-
 Exercise.addAnimation = async (req, res) => {
 	if (req.body.id === '') {
 		res.json({
@@ -233,8 +232,6 @@ Exercise.viewAll = async (req, res) => {
 	}
 }
 
-
-
 Exercise.update = async (req, res) => {
 	if (req.body.id === '') {
 		res.json({
@@ -282,8 +279,6 @@ Exercise.update = async (req, res) => {
 			});
 	}
 }
-
-
 Exercise.delete = async (req, res) => {
 	const data = await sql.query(`select * from "exercise" where id = $1`, [req.params.id]);
 	if (data.rows.length === 1) {

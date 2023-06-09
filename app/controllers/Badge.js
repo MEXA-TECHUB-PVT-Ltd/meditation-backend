@@ -1,4 +1,4 @@
-const Skill = require("../models/Skill");
+const Badge = require("../models/Badge");
 
 exports.create = (req, res) => {
   if (!req.body) {
@@ -7,19 +7,17 @@ exports.create = (req, res) => {
       status: false,
      });
   }  
-  Skill.create( req, res);
+  Badge.create( req, res);
 };
-
-exports.search = (req, res) => {
+exports.Streak = (req, res) => {
   if (!req.body) {
     res.json({
       message: "Content can not be empty!",
       status: false,
      });
   }  
-  Skill.search( req, res);
+  Badge.Streak( req, res);
 };
-
 
 exports.viewSpecific = (req, res) => {
   if (!req.body) {
@@ -28,7 +26,7 @@ exports.viewSpecific = (req, res) => {
       status: false,
      });
   }  
-  Skill.viewSpecific( req, res);
+  Badge.viewSpecific( req, res);
 };
 exports.viewAll = (req, res) => {
   if (!req.body) {
@@ -37,17 +35,7 @@ exports.viewAll = (req, res) => {
       status: false,
      });
   }  
-  Skill.viewAll( req, res);
-};
-
-exports.delete = (req, res) => {
-  if (!req.body) {
-    res.json({
-      message: "Content can not be empty!",
-      status: false,
-     });
-  }  
-  Skill.delete( req, res);
+  Badge.viewAll( req, res);
 };
 exports.update = (req, res) => {
   if (!req.body) {
@@ -56,9 +44,17 @@ exports.update = (req, res) => {
       status: false,
      });
   }  
-  Skill.update( req, res);
+  Badge.update( req, res);
 };
-
+exports.delete = (req, res) => {
+  if (!req.body) {
+    res.json({
+      message: "Content can not be empty!",
+      status: false,
+     });
+  }  
+  Badge.delete( req, res);
+};
 exports.addIcon = (req, res) => {
   if (!req.body) {
     res.json({
@@ -66,6 +62,14 @@ exports.addIcon = (req, res) => {
       status: false,
      });
   }  
-  Skill.addIcon( req, res);
+  Badge.addIcon( req, res);
 };
-
+exports.search = (req, res) => {
+  if (!req.body) {
+    res.json({
+      message: "Content can not be empty!",
+      status: false,
+     });
+  }  
+  Badge.search( req, res);
+};

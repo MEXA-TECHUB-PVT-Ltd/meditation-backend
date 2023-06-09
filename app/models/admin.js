@@ -311,7 +311,7 @@ admin.resetPassword = async function (req, res) {
 admin.newPassword = async (req, res) => {
 	try {
 		const email = req.body.email;
-		const found_email_query = 'SELECT * FROM otp WHERE email = $1 AND status = $2'
+		const found_email_query = `SELECT * FROM otp WHERE email = $1 AND status = $2`
 		const result = await sql.query(found_email_query, [email, 'verified'])
 		if (result.rowCount > 0) {
 			const found_email = 'SELECT * FROM admin WHERE email = $1'
@@ -332,16 +332,15 @@ admin.newPassword = async (req, res) => {
 				})
 
 			} else {
-				const found_email = 'SELECT * FROM user WHERE email = $1'
-				const foundResult = await sql.query(found_email, [email])
+				const found_email = 'SELECT * FROM "user" WHERE email = $1'
+				const foundResult = await sql.query(found_email, [req.body.email])
 				if (foundResult.rowCount > 0) {
 					const salt = await bcrypt.genSalt(10);
 					let hashpassword = await bcrypt.hash(req.body.password, salt);
 					let query = `UPDATE "user" SET password = $1  WHERE email = $2 RETURNING*`
-					let values = [hashpassword, email]
+					let values = [hashpassword, req.body.email]
 					let updateResult = await sql.query(query, values);
 					updateResult = updateResult.rows[0];
-					console.log(result.rows);
 					sql.query(`DELETE FROM otp WHERE id = $1;`, [result.rows[0].id], (err, result) => { });
 					res.json({
 						message: "Password changed",

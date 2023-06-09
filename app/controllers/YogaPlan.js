@@ -137,3 +137,82 @@ exports.search = (req, res) => {
   }  
   YogaPlan.search( req, res);
 };
+
+
+exports.start = (req, res) => {
+  if (!req.body) {
+    res.json({
+      message: "Content can not be empty!",
+      status: false,
+     });
+  }  
+  YogaPlan.start( req, res);
+};
+
+exports.updateStartedPlan = (req, res) => {
+  if (!req.body) {
+    res.json({
+      message: "Content can not be empty!",
+      status: false,
+     });
+  }  
+  YogaPlan.updateStartedPlan( req, res);
+};
+
+exports.view_completed_skills_User = (req, res) => {
+  if (!req.body) {
+    res.json({
+      message: "Content can not be empty!",
+      status: false,
+     });
+  }  
+  YogaPlan.view_completed_skills_User( req, res);
+};
+exports.view_completed_Exercises_User = (req, res) => {
+  if (!req.body) {
+    res.json({
+      message: "Content can not be empty!",
+      status: false,
+     });
+  }  
+  YogaPlan.view_completed_Exercises_User( req, res);
+};
+exports.quitPlan = (req, res) => {
+  if (!req.body) {
+    res.json({
+      message: "Content can not be empty!",
+      status: false,
+     });
+  }  
+  YogaPlan.quitPlan( req, res);
+};
+
+exports.view_All_Exercises_User = (req, res) => {
+  if (!req.body) {
+    res.json({
+      message: "Content can not be empty!",
+      status: false,
+     });
+  }  
+  YogaPlan.view_All_Exercises_User( req, res);
+};
+
+exports.view_completed_skills_plan = (req, res) => {
+  if (!req.body) {
+    res.json({
+      message: "Content can not be empty!",
+      status: false,
+     });
+  }  
+  YogaPlan.view_completed_skills_plan( req, res);
+};
+
+exports.viewProgress_plan_skill_user = (req, res) => {
+  if (!req.body) {
+    res.json({
+      message: "Content can not be empty!",
+      status: false,
+     });
+  }  
+  YogaPlan.viewProgress_plan_skill_user( req, res);
+};

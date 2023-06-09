@@ -18,8 +18,16 @@ router.post("/view_started_user", MeditationPlan.viewStarted_user);
 router.post("/view_all", MeditationPlan.viewAll);
 router.put("/update",upload.array('audio_files'), MeditationPlan.update);
 router.delete("/delete/:id" , MeditationPlan.delete)
+router.post("/streak", MeditationPlan.Streak);
 router.post("/change_plan_status", MeditationPlan.changePlanStatus);
 router.put("/start", MeditationPlan.start);
+router.delete("/quit_plan", MeditationPlan.quitPlan);
+router.put("/update_started_plan", MeditationPlan.updateStartedPlan);
+router.post("/view_progress_plan_skill_user", MeditationPlan.viewProgress_plan_skill_user);
+router.post("/view_completed_skills_plan", MeditationPlan.view_completed_skills_plan);
+router.post("/view_completed_skills_User", MeditationPlan.view_completed_skills_User);
+router.post("/view_completed_Exercises_User", MeditationPlan.view_completed_Exercises_User);
+router.post("/view_All_Exercises_User", MeditationPlan.view_All_Exercises_User);
 
 app.use("/meditation_plan", router);
 };
