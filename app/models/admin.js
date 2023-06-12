@@ -373,6 +373,26 @@ admin.newPassword = async (req, res) => {
 }
 
 
+admin.AllPlansCount = async (req, res) => {
+	const data = await sql.query(`SELECT COUNT(*) AS count FROM "meditation_plan"`);
+	const data1 = await sql.query(`SELECT COUNT(*) AS count FROM "yoga_plan"`);
+	const data2 = await sql.query(`SELECT COUNT(*) AS count FROM "foundation_plan"`);
+	if (data.rows) {
+		let count = parseInt(data.rows[0].count)+ parseInt(data1.rows[0].count)+ parseInt(data2.rows[0].count)
+		res.json({
+			message: "All Plans Count",
+			status: true,
+			result:count,
+		});
+	} else {
+		res.json({
+			message: "could not fetch",
+			status: false
+		})
+	}
+}
+
+
 
 admin.updateProfile = async (req, res) => {
 	if (req.body.id === '') {

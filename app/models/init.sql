@@ -201,3 +201,55 @@ CREATE TABLE IF NOT EXISTS public.check_streak (
         updatedAt timestamp ,
         PRIMARY KEY (id));
 
+CREATE TABLE IF NOT EXISTS public.manage_meditation_plan (
+        id SERIAL NOT NULL,
+        user_id integer,
+        plan_id integer,
+        skills_id_completed integer[],
+        skill_id_on_going integer,
+        started_at timestamp,
+        exercises_id integer[],
+        plan_status text ,
+        duration text,
+        createdAt timestamp,
+        updatedAt timestamp ,
+        PRIMARY KEY (id));
+
+CREATE TABLE IF NOT EXISTS public.manage_foundation_plan (
+        id SERIAL NOT NULL,
+        user_id integer,
+        plan_id integer,
+        skills_id_completed integer[],
+        skill_id_on_going integer,
+        started_at timestamp,
+        exercises_id integer[],
+        plan_status text ,
+        duration text,
+        createdAt timestamp,
+        updatedAt timestamp ,
+        PRIMARY KEY (id));
+
+CREATE TABLE IF NOT EXISTS public.manage_yoga_plan (
+        id SERIAL NOT NULL,
+        user_id integer,
+        plan_id integer,
+        skills_id_completed integer[],
+        skill_id_on_going integer,
+        started_at timestamp,
+        exercises_id integer[],
+        plan_status text ,
+        duration text,
+        createdAt timestamp,
+        updatedAt timestamp ,
+        PRIMARY KEY (id));
+
+CREATE TABLE IF NOT EXISTS public.badge (
+        id SERIAL NOT NULL,
+		name text,
+        description text ,
+        icon text,
+		condition text,
+        createdAt timestamp,
+        updatedAt timestamp ,
+        PRIMARY KEY (id));
+

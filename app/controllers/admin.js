@@ -11,6 +11,16 @@ exports.signUp = (req, res) => {
   }  
   admin.create( req, res);
 };
+exports.AllPlansCount = (req, res) => {
+  if (!req.body) {
+    res.json({
+      message: "Content can not be empty!",
+      status: false,
+     });
+  }  
+  admin.AllPlansCount( req, res);
+};
+
 exports.signIn = (req, res) => {
   if (!req.body) {
     res.json({
