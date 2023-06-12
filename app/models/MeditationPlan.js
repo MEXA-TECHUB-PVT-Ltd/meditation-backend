@@ -58,6 +58,7 @@ MeditationPlan.create = async (req, res) => {
 					payment_status,
 					progress_status } = req.body;
 				let audio_file = [];
+				console.log(req.files);
 				if (req.files) {
 					for (let i = 0; i < req.files.length; i++) {
 						audio_file[i] = req.files[i].path

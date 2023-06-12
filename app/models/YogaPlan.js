@@ -945,7 +945,6 @@ YogaPlan.start = async (req, res) => {
 						});
 					} else {
 						if (result.rowCount === 1) {
-							console.log("2")
 							sql.query(`CREATE TABLE IF NOT EXISTS public.manage_yoga_plan (
 								id SERIAL NOT NULL,
 								user_id integer,

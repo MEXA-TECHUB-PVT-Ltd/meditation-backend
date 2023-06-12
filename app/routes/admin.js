@@ -14,6 +14,7 @@ module.exports = app => {
     router.post("/get_all_user", admin.GetAllUser)
     router.post("/block_unblock_user", admin.BlockUnblockUser)
     router.get("/get_user_by_id/:id", admin.GetUserByID)
+    router.get("/all_plans_count", admin.AllPlansCount);
 
     router.post("/verifyEmail", admin.verifyEmail);
     router.post("/verifyOTP", admin.verifyOTP)
