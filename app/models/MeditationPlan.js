@@ -386,9 +386,9 @@ MeditationPlan.addAudioFile = async (req, res) => {
 		});
 	} else {
 		const userData = await sql.query(`select * from "meditation_plan" where id = $1`, [req.body.id]);
-		if (userData.rowCount === 1) {
+		if (userData.rowCount > 0) {
 
-			let photo = userData.rows[0].animations;
+			let photo = userData.rows[0].audio_files;
 			let { id } = req.body;
 			console.log(req.files)
 			if (req.files) {
