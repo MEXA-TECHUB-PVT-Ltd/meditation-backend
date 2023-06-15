@@ -114,19 +114,21 @@ CREATE TABLE IF NOT EXISTS public.yoga_plan (
         plan_name text,
         user_id integer,
         icon text,
-        description text,
+        description text,	
+        duration text,
         goals_id integer[],
         age_group text ,
         level text,
         skills_id integer[],
         exercises_id integer[],
-        started_at text,
+        started_at timestamp,
         payment_status text,
         progress_status text,
         createdAt timestamp,
         updatedAt timestamp ,
         PRIMARY KEY (id));
-        
+
+
 CREATE TABLE IF NOT EXISTS public.foundation_plan (
         id SERIAL NOT NULL,
         plan_name text,
