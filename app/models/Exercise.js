@@ -5,6 +5,8 @@ const Exercise = function (Exercise) {
 	this.name = Exercise.name;
 	this.description = Exercise.description;
 	this.animations = Exercise.animations
+	this.duration = Exercise.duration
+
 };
 
 Exercise.create = async (req, res) => {
@@ -14,6 +16,7 @@ Exercise.create = async (req, res) => {
         description text ,
         animations text[],
 		audio_file text,
+		duration text,
         createdAt timestamp,
         updatedAt timestamp ,
         PRIMARY KEY (id))  ` , async (err, result) => {
@@ -24,13 +27,13 @@ Exercise.create = async (req, res) => {
 				err
 			});
 		} else {
-			const { name, description } = req.body;
+			const { name, description ,duration} = req.body;
 
 			const query = `INSERT INTO "exercise"
-				 (id,name, description,animations,audio_file,createdAt ,updatedAt )
-                            VALUES (DEFAULT, $1, $2, $3, $4, 'NOW()','NOW()' ) RETURNING * `;
+				 (id,name, description,animations,audio_file,duration,createdAt ,updatedAt )
+                            VALUES (DEFAULT, $1, $2, $3, $4, $5,'NOW()','NOW()' ) RETURNING * `;
 			const foundResult = await sql.query(query,
-				[name, description, [''],'']);
+				[name, description, [''],'', duration]);
 			if (foundResult.rows.length > 0) {
 				if (err) {
 					res.json({
@@ -240,7 +243,9 @@ Exercise.update = async (req, res) => {
 		const ExerciseData = await sql.query(`select * from "exercise" where id = $1`, [req.body.id]);
 		const oldname = ExerciseData.rows[0].name;
 		const olddescription = ExerciseData.rows[0].description;
-		let { name, description, id } = req.body;
+		const oldduration = ExerciseData.rows[0].duration;
+
+		let { name, description,duration ,id } = req.body;
 
 		if (name === undefined || name === '') {
 			name = oldname;
@@ -249,9 +254,13 @@ Exercise.update = async (req, res) => {
 		if (description === undefined || description === '') {
 			description = olddescription;
 		}
+		if (duration === undefined || duration === '') {
+			duration = oldduration;
+		}
+
 		sql.query(`UPDATE "exercise" SET name =  $1, 
-		description =  $2  WHERE id = $3;`,
-			[name, description, id], async (err, result) => {
+		description =  $2, duration = $3  WHERE id = $4;`,
+			[name, description, duration, id], async (err, result) => {
 				if (err) {
 					console.log(err);
 					res.json({

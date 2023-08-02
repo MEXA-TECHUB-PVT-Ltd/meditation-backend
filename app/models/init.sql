@@ -56,9 +56,11 @@ CREATE TABLE IF NOT EXISTS public.exercise (
         description text ,
         animations text[],
         audio_file text,
+        duration text,
         createdAt timestamp,
         updatedAt timestamp ,
         PRIMARY KEY (id));
+
 
 
 CREATE TABLE IF NOT EXISTS public.rest_time  (
@@ -131,24 +133,17 @@ CREATE TABLE IF NOT EXISTS public.yoga_plan (
 
 CREATE TABLE IF NOT EXISTS public.foundation_plan (
         id SERIAL NOT NULL,
-        plan_name text,
-        user_id integer,
-        icon text,
-        description text,
-        duration text,
         days  TEXT,
-        goals_id INTEGER[],
-        age_group text ,
-        level text,
-        plan_id INTEGER,
+        icon text,
+        plan_name text,
+        description text,
+        plan_id INTEGER[],
         plan_type text,
-        started_at timestamp,
-        payment_status text,
-        progress_status text,
         createdAt timestamp,
         updatedAt timestamp ,
         PRIMARY KEY (id));
 
+        
 
 
 
@@ -219,8 +214,12 @@ CREATE TABLE IF NOT EXISTS public.manage_meditation_plan (
 
 CREATE TABLE IF NOT EXISTS public.manage_foundation_plan (
         id SERIAL NOT NULL,
+        days TEXT,
         user_id integer,
         plan_id integer,
+        plan_type text,
+        plans_id_completed integer[],
+        plan_id_on_going integer,
         skills_id_completed integer[],
         skill_id_on_going integer,
         started_at timestamp,

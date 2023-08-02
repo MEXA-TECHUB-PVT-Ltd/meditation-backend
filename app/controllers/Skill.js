@@ -5,19 +5,43 @@ exports.create = (req, res) => {
     res.json({
       message: "Content can not be empty!",
       status: false,
-     });
-  }  
-  Skill.create( req, res);
+    });
+  }
+  Skill.create(req, res);
 };
+
+exports.viewProgressAll = (req, res) => {
+  if (!req.body) {
+    res.json({
+      message: "Content can not be empty!",
+      status: false,
+    });
+  }
+  Skill.viewProgressAll(req, res);
+};
+
+
+
+exports.viewProgress = (req, res) => {
+  if (!req.body) {
+    res.json({
+      message: "Content can not be empty!",
+      status: false,
+    });
+  }
+  Skill.viewProgress(req, res);
+};
+
+
 
 exports.search = (req, res) => {
   if (!req.body) {
     res.json({
       message: "Content can not be empty!",
       status: false,
-     });
-  }  
-  Skill.search( req, res);
+    });
+  }
+  Skill.search(req, res);
 };
 
 
@@ -26,18 +50,18 @@ exports.viewSpecific = (req, res) => {
     res.json({
       message: "Content can not be empty!",
       status: false,
-     });
-  }  
-  Skill.viewSpecific( req, res);
+    });
+  }
+  Skill.viewSpecific(req, res);
 };
 exports.viewAll = (req, res) => {
   if (!req.body) {
     res.json({
       message: "Content can not be empty!",
       status: false,
-     });
-  }  
-  Skill.viewAll( req, res);
+    });
+  }
+  Skill.viewAll(req, res);
 };
 
 exports.delete = (req, res) => {
@@ -45,18 +69,18 @@ exports.delete = (req, res) => {
     res.json({
       message: "Content can not be empty!",
       status: false,
-     });
-  }  
-  Skill.delete( req, res);
+    });
+  }
+  Skill.delete(req, res);
 };
 exports.update = (req, res) => {
   if (!req.body) {
     res.json({
       message: "Content can not be empty!",
       status: false,
-     });
-  }  
-  Skill.update( req, res);
+    });
+  }
+  Skill.update(req, res);
 };
 
 exports.addIcon = (req, res) => {
@@ -64,8 +88,8 @@ exports.addIcon = (req, res) => {
     res.json({
       message: "Content can not be empty!",
       status: false,
-     });
-  }  
-  Skill.addIcon( req, res);
+    });
+  }
+  Skill.addIcon(req, res);
 };
 

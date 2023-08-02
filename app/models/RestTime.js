@@ -198,9 +198,9 @@ RestTime.update  = async (req, res) => {
 
 
 RestTime.delete = async (req, res) => {
-	const data = await sql.query(`select * from "rest_time" where user_id = $1`, [req.params.id]);
+	const data = await sql.query(`select * from "rest_time" where id = $1`, [req.params.id]);
 	if (data.rows.length === 1) {
-		sql.query(`DELETE FROM "rest_time" WHERE user_id = $1;`, [req.params.id], (err, result) => {
+		sql.query(`DELETE FROM "rest_time" WHERE id = $1;`, [req.params.id], (err, result) => {
 			if (err) {
 				res.json({
 					message: "Try Again",

@@ -28,6 +28,15 @@ exports.viewSpecific = (req, res) => {
   }  
   FoundationPlan.viewSpecific( req, res);
 };
+exports.viewAllByUser = (req, res) => {
+  if (!req.body) {
+    res.json({
+      message: "Content can not be empty!",
+      status: false,
+     });
+  }  
+  FoundationPlan.viewAllByUser( req, res);
+};
 exports.viewAll = (req, res) => {
   if (!req.body) {
     res.json({
@@ -36,6 +45,25 @@ exports.viewAll = (req, res) => {
      });
   }  
   FoundationPlan.viewAllPlan( req, res);
+};
+exports.createPlan = (req, res) => {
+  if (!req.body) {
+    res.json({
+      message: "Content can not be empty!",
+      status: false,
+     });
+  }  
+  FoundationPlan.createPlan( req, res);
+};
+
+exports.AddPlan = (req, res) => {
+  if (!req.body) {
+    res.json({
+      message: "Content can not be empty!",
+      status: false,
+     });
+  }  
+  FoundationPlan.AddPlan( req, res);
 };
 exports.viewCompleted = (req, res) => {
   if (!req.body) {

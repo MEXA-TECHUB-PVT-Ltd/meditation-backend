@@ -2,6 +2,7 @@
 const { sql } = require("../config/db.config");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const { array } = require('pg-format'); // Import the pg-format module
 
 const Skill = function (Skill) {
 	this.skill_name = Skill.skill_name;
@@ -62,6 +63,180 @@ Skill.create = async (req, res) => {
 		};
 	});
 }
+
+
+Skill.viewProgressAll = async (req, res) => {
+	let skill_id = req.body.skill_id; 
+	let user_id = req.body.user_id;
+
+	const YogaPlanTotal = await sql.query(
+		`SELECT COUNT(*) AS YogaTotal FROM "yoga_plan" WHERE $1 = ANY(skills_id) 
+		`,
+		[skill_id]
+	);
+	const MeditationPlanTotal = await sql.query(
+		`SELECT COUNT(*) AS MeditationTotal FROM "meditation_plan"  WHERE $1 = ANY(skills_id) 
+		`,
+		[skill_id]
+	);
+	console.log(MeditationPlanTotal.rows);
+
+	const FoundationPlanTotalMeditation = await sql.query(
+
+		`SELECT COUNT(*) AS FoundationTotal1 FROM "foundation_plan" 
+		JOIN "meditation_plan" ON "meditation_plan"."id" = ANY("foundation_plan"."plan_id")
+		WHERE $1 = ANY(skills_id)  
+		AND "foundation_plan".plan_type = $2 `,
+		[skill_id, 'meditation_plan']
+	);
+	console.log(FoundationPlanTotalMeditation.rows);
+	const FoundationPlanTotalYoga = await sql.query(
+		`SELECT COUNT(*) AS FoundationTotal2 FROM "foundation_plan" 
+		JOIN "yoga_plan" ON  "yoga_plan"."id" = ANY("foundation_plan"."plan_id")
+		WHERE $1 = ANY(skills_id) 
+		 AND "foundation_plan".plan_type = $2 `,
+		[skill_id, 'yoga_plan']
+	);
+
+	console.log(FoundationPlanTotalYoga.rows);
+
+
+	const YogaPlanCompleted = await sql.query(
+		`SELECT COUNT(*) AS YogaCompleted FROM  "manage_yoga_plan" WHERE $1 = ANY(skills_id_completed) 
+		AND "manage_yoga_plan".user_id = $2`,
+		[skill_id, user_id]
+	);
+
+	const MeditationPlanCompleted = await sql.query(
+		`SELECT COUNT(*) AS MeditationCompleted FROM "manage_meditation_plan" WHERE $1 = ANY(skills_id_completed) 
+		AND "manage_meditation_plan".user_id = $2`,
+		[skill_id, user_id]
+	);
+
+	const FoundationPlanCompleted = await sql.query(
+		`SELECT COUNT(*) AS FoundationCompleted FROM "manage_foundation_plan" WHERE $1 = ANY(skills_id_completed) 
+		AND "manage_foundation_plan".user_id = $2`,
+		[skill_id, user_id]
+	);
+
+	const completed = (
+		parseInt(FoundationPlanCompleted.rows[0].foundationcompleted)
+		+ parseInt(YogaPlanCompleted.rows[0].yogacompleted)
+		+ parseInt(MeditationPlanCompleted.rows[0].meditationcompleted));
+	console.log(completed);
+
+	const total = (
+		parseInt(FoundationPlanTotalYoga.rows[0].foundationtotal2) +
+			parseInt(FoundationPlanTotalMeditation.rows[0].foundationtotal1) +
+			parseInt(YogaPlanTotal.rows[0].yogatotal) +
+		parseInt(MeditationPlanTotal.rows[0].meditationtotal)
+		);
+	sql.query(`SELECT COUNT(*) AS COUNT FROM "yoga_plan" WHERE $1 = ANY(skills_id)`
+		, [skill_id], (err, result) => {
+			if (err) {
+				console.log(err);
+				res.json({
+					message: "Try Again",
+					status: false,
+					err
+				});
+			} else {
+				res.json({
+					message: "Skill Progress",
+					status: true,
+					total: total,
+					completed: completed
+				});
+			}
+		});
+}
+
+
+Skill.viewProgress = async (req, res) => {
+	let skill_id = req.body.skill_id; 
+	let user_id = req.body.user_id;
+	const YogaPlanTotal = await sql.query(
+		`SELECT COUNT(*) AS YogaTotal FROM "yoga_plan" JOIN "manage_yoga_plan" ON 
+		"yoga_plan".id = "manage_yoga_plan".plan_id WHERE $1 = ANY(skills_id) 
+		AND "manage_yoga_plan".user_id = $2`,
+		[skill_id, user_id]
+	);
+	const MeditationPlanTotal = await sql.query(
+		`SELECT COUNT(*) AS MeditationTotal FROM "meditation_plan" JOIN "manage_meditation_plan" ON 
+		"meditation_plan".id = "manage_meditation_plan".plan_id WHERE $1 = ANY(skills_id) 
+		AND "manage_meditation_plan".user_id = $2`,
+		[skill_id, user_id]
+	);
+
+	const FoundationPlanTotalMeditation = await sql.query(
+
+		`SELECT COUNT(*) AS FoundationTotal1 FROM "foundation_plan" JOIN "manage_foundation_plan" ON 
+		"foundation_plan".id = "manage_foundation_plan".plan_id 
+		JOIN "meditation_plan" ON "foundation_plan"."plan_id" = "meditation_plan"."id"
+		WHERE $1 = ANY(skills_id) 
+		AND "manage_foundation_plan".user_id = $2 AND "foundation_plan".plan_type = $3 `,
+		[skill_id, user_id, 'meditation_plan']
+	);
+	const FoundationPlanTotalYoga = await sql.query(
+		`SELECT COUNT(*) AS FoundationTotal2 FROM "foundation_plan" JOIN "manage_foundation_plan" ON 
+		"foundation_plan".id = "manage_foundation_plan".plan_id 
+		JOIN "yoga_plan" ON "foundation_plan"."plan_id" = "yoga_plan"."id"
+		WHERE $1 = ANY(skills_id) 
+		AND "manage_foundation_plan".user_id = $2 AND "foundation_plan".plan_type = $3 `,
+		[skill_id, user_id, 'yoga_plan']
+	);
+
+	const YogaPlanCompleted = await sql.query(
+		`SELECT COUNT(*) AS YogaCompleted FROM  "manage_yoga_plan" WHERE $1 = ANY(skills_id_completed) 
+		AND "manage_yoga_plan".user_id = $2`,
+		[skill_id, user_id]
+	);
+
+	const MeditationPlanCompleted = await sql.query(
+		`SELECT COUNT(*) AS MeditationCompleted FROM "manage_meditation_plan" WHERE $1 = ANY(skills_id_completed) 
+		AND "manage_meditation_plan".user_id = $2`,
+		[skill_id, user_id]
+	);
+
+	const FoundationPlanCompleted = await sql.query(
+		`SELECT COUNT(*) AS FoundationCompleted FROM "manage_foundation_plan" WHERE $1 = ANY(skills_id_completed) 
+		AND "manage_foundation_plan".user_id = $2`,
+		[skill_id, user_id]
+	);
+
+	const completed = (
+		parseInt(FoundationPlanCompleted.rows[0].foundationcompleted)
+		+ parseInt(YogaPlanCompleted.rows[0].yogacompleted)
+		+ parseInt(MeditationPlanCompleted.rows[0].meditationcompleted));
+	console.log(completed);
+
+	const total = (
+		parseInt(FoundationPlanTotalYoga.rows[0].foundationtotal2) +
+			parseInt(FoundationPlanTotalMeditation.rows[0].foundationtotal1) +
+			parseInt(YogaPlanTotal.rows[0].yogatotal) +
+		parseInt(MeditationPlanTotal.rows[0].meditationtotal)
+		);
+	sql.query(`SELECT COUNT(*) AS COUNT FROM "yoga_plan" WHERE $1 = ANY(skills_id)`
+		, [skill_id], (err, result) => {
+			if (err) {
+				console.log(err);
+				res.json({
+					message: "Try Again",
+					status: false,
+					err
+				});
+			} else {
+				res.json({
+					message: "Skill Progress",
+					status: true,
+					total: total,
+					completed: completed
+				});
+			}
+		});
+}
+
+
 
 
 Skill.addIcon = async (req, res) => {
