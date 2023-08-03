@@ -123,7 +123,7 @@ YogaPlan.viewAllPlan = async (req, res) => {
 
 						, (
 							SELECT json_agg( 
-								json_build_object('id', s.id,'Exercise_name', s.name,
+								json_build_object('id', s.id,'Exercise_name', s.name, 'Exercise_duration', s.duration,
 								'Exercise_Animation', s.animations,'Exercise_description', s.description,
 								'Exercise_Audio_file', s.audio_file,'Exercise_createdat', s.createdat
 								)
@@ -222,7 +222,7 @@ YogaPlan.viewCompleted = async (req, res) => {
 									FROM exercise s
 									WHERE s.id = ANY(mp.exercises_id)
 										) AS exercise
-					   FROM yoga_plan mp  WHERE progress_status = 'completed' 
+					   FROM manage_yoga_plan mp  WHERE plan_status = 'completed' 
 		 ORDER BY "createdat" DESC`);
 	}
 	if (page && limit) {

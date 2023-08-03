@@ -2,7 +2,6 @@ const { sql } = require("../config/db.config");
 
 const MeditationPlan = function (MeditationPlan) {
 	this.plan_name = MeditationPlan.plan_name;
-	this.user_id = MeditationPlan.user_id;
 	this.icon = MeditationPlan.icon;
 	this.description = MeditationPlan.description;
 	this.duration = MeditationPlan.duration;
@@ -10,7 +9,6 @@ const MeditationPlan = function (MeditationPlan) {
 	this.age_group = MeditationPlan.age_group;
 	this.level = MeditationPlan.level;
 	this.skills_id = MeditationPlan.skills_id;
-	this.exercises_id = MeditationPlan.exercises_id;
 	this.animations = MeditationPlan.animations;
 	this.audio_files = MeditationPlan.audio_files;
 	this.started_at = MeditationPlan.started_at;
@@ -22,7 +20,6 @@ MeditationPlan.create = async (req, res) => {
 	sql.query(`CREATE TABLE IF NOT EXISTS public.meditation_plan (
         id SERIAL NOT NULL,
 		plan_name text,
-		user_id text,
         icon text,
         description text,
 		duration text,
@@ -30,7 +27,6 @@ MeditationPlan.create = async (req, res) => {
 		age_group text ,
         level text,
 		skills_id integer[],
-		exercises_id integer[],
 		animations text[],
 		audio_files text[],
 		started_at timestamp,
@@ -52,8 +48,8 @@ MeditationPlan.create = async (req, res) => {
 					status: false,
 				});
 			} else {
-				const { plan_name, user_id, description, duration, goals_id, age_group,
-					level, skills_id, exercises_id,
+				const { plan_name, description, duration, goals_id, age_group,
+					level, skills_id,
 					started_at,
 					payment_status,
 					progress_status } = req.body;
@@ -65,13 +61,13 @@ MeditationPlan.create = async (req, res) => {
 					}
 				}
 				const query = `INSERT INTO "meditation_plan"
-				 (id,plan_name, user_id ,icon,description,duration,goals_id,age_group ,level, skills_id,exercises_id,animations,audio_files ,
+				 (id,plan_name ,icon,description,duration,goals_id,age_group ,level, skills_id,animations,audio_files ,
 					started_at ,
 					payment_status ,
 					progress_status ,createdAt ,updatedAt )
-                            VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8,$9,$10,$11,$12,$13, $14,$15, 'NOW()','NOW()' ) RETURNING * `;
+                            VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8,$9,$10,$11,$12,$13, 'NOW()','NOW()' ) RETURNING * `;
 				const foundResult = await sql.query(query,
-					[plan_name, user_id, '', description, duration, goals_id, age_group, level, skills_id, exercises_id, [''], audio_file,
+					[plan_name, '', description, duration, goals_id, age_group, level, skills_id, [''], audio_file,
 						started_at,
 						payment_status,
 						progress_status]);
@@ -309,7 +305,7 @@ MeditationPlan.viewCompleted_user = async (req, res) => {
 	}
 }
 MeditationPlan.viewStarted_user = async (req, res) => {
-	const data = await sql.query(`SELECT COUNT(*) AS count FROM "meditation_plan" WHERE  user_id = $1 
+	const data = await sql.query(`SELECT COUNT(*) AS count FROM "manage_meditation_plan" WHERE  user_id = $1 
 	AND progress_status = 'started'`, [req.body.user_id]);
 	let limit = req.body.limit;
 	let page = req.body.page;
@@ -334,7 +330,7 @@ MeditationPlan.viewStarted_user = async (req, res) => {
 							  FROM skill s
 							   WHERE s.id = ANY(mp.skills_id) 
 								) AS skills
-					   FROM meditation_plan mp 
+					   FROM manage_meditation_plan mp 
 					   where "mp".user_id = $1 AND progress_status = 'started' 
 		 ORDER BY "createdat" DESC`, [req.body.user_id]);
 	}
@@ -360,7 +356,7 @@ MeditationPlan.viewStarted_user = async (req, res) => {
 							  FROM skill s
 							   WHERE s.id = ANY(mp.skills_id) 
 								) AS skills
-					   FROM meditation_plan mp 
+					   FROM manage_meditation_plan mp 
 					   where "mp".user_id = $1 AND progress_status = 'started' ORDER BY "createdat" DESC
 		LIMIT $2 OFFSET $3 ` , [req.body.user_id, limit, offset]);
 	}
@@ -645,15 +641,16 @@ MeditationPlan.changePlanStatus = async (req, res) => {
 	} else {
 		const data = await sql.query(`select * from "meditation_plan" where id = $1`, [req.body.id]);
 		if (data.rowCount === 1) {
-			sql.query(`UPDATE "meditation_plan" SET progessstatus = $1 WHERE id = $2;`, [req.body.status, req.body.id], async (err, result) => {
+			sql.query(`UPDATE "meditation_plan" SET progress_status = $1 WHERE id = $2;`, [req.body.status, req.body.id], async (err, result) => {
 				if (err) {
+					console.log(err);
 					res.json({
 						message: "Try Again",
 						status: false,
 						err
 					});
 				} else
-					if (result.rowCount === 1) {
+					if (result.rowCount > 0) {
 						const data = await sql.query(`select * from "meditation_plan" where id = $1`, [req.body.id]);
 						res.json({
 							message: "meditation Plan status Updated Successfully!",
@@ -661,6 +658,7 @@ MeditationPlan.changePlanStatus = async (req, res) => {
 							result: data.rows,
 						});
 					} else if (result.rowCount === 0) {
+						console.log(err);
 						res.json({
 							message: "Not Found",
 							status: false,
@@ -764,11 +762,10 @@ MeditationPlan.update = async (req, res) => {
 
 			const oldLevel = RelaxationMusicData.rows[0].level;
 			const oldSkills_id = RelaxationMusicData.rows[0].skills_id;
-			const oldexercises_id = RelaxationMusicData.rows[0].exercises_id;
 			const oldStarted_at = RelaxationMusicData.rows[0].started_at;
 			const oldProgress_status = RelaxationMusicData.rows[0].progress_status;
 			const oldpayment_status = RelaxationMusicData.rows[0].payment_status;
-			let { id, plan_name, description, duration, goals_id, age_group, payment_status, level, skills_id, exercises_id, started_at, progress_status } = req.body;
+			let { id, plan_name, description, duration, goals_id, age_group, payment_status, level, skills_id, started_at, progress_status } = req.body;
 
 			if (started_at === undefined || started_at === '') {
 				started_at = oldStarted_at;
@@ -782,9 +779,6 @@ MeditationPlan.update = async (req, res) => {
 
 			if (progress_status === undefined || progress_status === '') {
 				progress_status = oldProgress_status;
-			}
-			if (exercises_id === undefined || exercises_id === '') {
-				exercises_id = oldexercises_id;
 			}
 
 
@@ -815,9 +809,9 @@ MeditationPlan.update = async (req, res) => {
 			}
 			console.log(duration);
 			sql.query(`update "meditation_plan" SET plan_name = $1,
-		description = $2,duration = $3, goals_id = $4, age_group = $5 ,level=$6, skills_id  = $7,exercises_id = $8,audio_files = $9,
-		started_at = $10, payment_status = $11, progress_status = $12 WHERE id = $13;`,
-				[plan_name, description, duration, goals_id, age_group, level, skills_id, exercises_id, audio_files, started_at, payment_status, progress_status, id], async (err, result) => {
+		description = $2,duration = $3, goals_id = $4, age_group = $5 ,level=$6, skills_id  = $7,audio_files = $8,
+		started_at = $9, payment_status = $10, progress_status = $11 WHERE id = $12;`,
+				[plan_name, description, duration, goals_id, age_group, level, skills_id, audio_files, started_at, payment_status, progress_status, id], async (err, result) => {
 					if (err) {
 						console.log(err);
 						res.json({

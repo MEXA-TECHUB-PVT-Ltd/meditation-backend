@@ -28,6 +28,7 @@
     "nodemailer": "^6.9.2",
     "nodemon": "^2.0.22",
     "pg": "^8.10.0",
+    "pg-format": "^1.0.4",
     "push.js": "^1.0.12",
     "socket.io": "^4.6.1"
   }

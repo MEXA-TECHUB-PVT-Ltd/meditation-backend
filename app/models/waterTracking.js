@@ -134,7 +134,7 @@ waterTracking.delete = async (req, res) => {
 	}
 }
 waterTracking.viewSpecific = (req, res) => {
-	sql.query(`SELECT * FROM "water_tracking" WHERE ( user_id = $1 AND id = $2)`, [req.body.user_id, req.body.tracker_id], (err, result) => {
+	sql.query(`SELECT * FROM "water_tracking" WHERE ( user_id = $1 OR id = $2)`, [req.body.user_id, req.body.tracker_id], (err, result) => {
 		if (err) {
 			console.log(err);
 			res.json({
@@ -298,8 +298,7 @@ waterTracking.updateDailyGoal = async (req, res) => {
 // 	}
 // }
 waterTracking.viewDailyGoal = (req, res) => {
-	sql.query(`SELECT "daily_goal".*, "water_tracking".*  FROM "daily_goal" JOIN "water_tracking" 
-	  ON "daily_goal".tracker_id = "water_tracking".id WHERE ( "daily_goal".user_id = $1)`, [req.body.user_id], (err, result) => {
+	sql.query(`SELECT  *  FROM  "water_tracking"  WHERE ( user_id = $1)`, [req.body.user_id], (err, result) => {
 		if (err) {
 			console.log(err);
 			res.json({

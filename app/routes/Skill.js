@@ -12,6 +12,8 @@ router.post("/view_all", Skill.viewAll);
 router.put("/update", Skill.update);
 router.delete("/delete/:id" , Skill.delete)
 router.post("/search", Skill.search);
+router.post("/view_progress", Skill.viewProgress);
+router.post("/view_progress_all", Skill.viewProgressAll);
 
 
 
