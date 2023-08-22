@@ -9,6 +9,15 @@ exports.create = (req, res) => {
   }  
   Exercise.create( req, res);
 };
+exports.UpdateAnimation = (req, res) => {
+  if (!req.body) {
+    res.json({
+      message: "Content can not be empty!",
+      status: false,
+     });
+  }  
+  Exercise.UpdateAnimation( req, res);
+};
 
 
 exports.viewSpecific = (req, res) => {
