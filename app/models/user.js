@@ -580,7 +580,7 @@ User.getHistory = async (req, res) => {
 `, [req.body.user_id]);
 
 	async  function calculateRemainingTime() {
-		const userId = 1; 
+		const userId = req.body.user_id; 
 		const data = await fetchData(userId);
 		let final = 0;
 		data.forEach(row => {
@@ -592,11 +592,13 @@ User.getHistory = async (req, res) => {
 		});
 		return final;
 	}
-
+	console.log("time")
 	const time = await calculateRemainingTime();
+	console.log(time)
 	const userData = await sql.query(`SELECT
 	createdat AS history_date,
 	action_type AS title,
+	status AS status,
 	start_date AS start_date,
 	action_id AS action_id,
 	action_table AS table
