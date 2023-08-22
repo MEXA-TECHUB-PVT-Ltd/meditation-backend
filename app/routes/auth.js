@@ -19,6 +19,9 @@ module.exports = app => {
     router.get("/specific_user/:id", Auth.SpecificUser)
     router.put("/get_skill_progress", Auth.skillProgress);
     router.put("/restart_progress", Auth.RestartProgress);
+    router.get("/get_years", Auth.getYears)
+    router.post("/get_history", Auth.getHistory)
+    router.post("/remove_progress", Auth.removeProgress)
 
     // router.put("/add_image", upload.single('image'),  Auth.addImage);
     // router.put("/add_cover_image", upload.single('image'),  Auth.addCoverImage);
@@ -26,8 +29,7 @@ module.exports = app => {
     // router.delete("/delete_user/:id", Auth.DeleteUser)
     // router.get("/totay_added_users", Auth.todaysAddedUsers)
     
-    // router.post("/get_monthwise_users", Auth.getAllUsers_MonthWise_count)
-    // router.get("/get_years", Auth.getYears)
+    router.post("/get_monthwise_users", Auth.getAllUsers_MonthWise_count)
 
     // router.get("/subscribed_user_count", Auth.SubscribedUserCount)
     // router.get("/subscribed_users", Auth.SubscribedUsers)

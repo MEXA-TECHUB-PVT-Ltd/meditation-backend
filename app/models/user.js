@@ -1,5 +1,6 @@
 const { sql } = require("../config/db.config");
 const bcrypt = require("bcryptjs");
+const moment = require('moment');
 const jwt = require("jsonwebtoken");
 const User = function (User) {
 	this.username = User.username;
@@ -540,7 +541,124 @@ User.getAllUsers_MonthWise_count = (req, res) => {
 
 }
 
+// Replace this function with your actual data fetching logic
+async function fetchData(userId) {
+	try {
+		const query = `
+		SELECT
+		  start_date,
+		  end_date
+		FROM
+		  history
+		WHERE
+		  user_id = $1
+		ORDER BY
+		  createdat::date DESC,
+		  createdat DESC;
+	  `;
+		const values = [userId];
+		const result = await sql.query(query, values);
+		return result.rows;
+	} catch (error) {
+		console.error('Error fetching data:', error);
+		throw error;
+	} finally {
+	}
+}
 
+User.getHistory = async (req, res) => {
+	const timeTrained = await sql.query(`SELECT
+	start_date AS start_date,
+	end_date AS end_date
+			FROM
+    			history
+			WHERE
+   				user_id = $1
+			ORDER BY
+ 				   createdat::date DESC,
+ 				   createdat DESC;
+`, [req.body.user_id]);
+
+	async  function calculateRemainingTime() {
+		const userId = 1; 
+		const data = await fetchData(userId);
+		let final = 0;
+		data.forEach(row => {
+			const startDateTime = moment(row.start_date);
+			const endDateTime = moment(row.end_date);
+			const duration = moment.duration(endDateTime.diff(startDateTime));
+			const totalMinutes = duration.asMinutes();
+			final += parseInt(totalMinutes);
+		});
+		return final;
+	}
+
+	const time = await calculateRemainingTime();
+	const userData = await sql.query(`SELECT
+	createdat AS history_date,
+	action_type AS title,
+	start_date AS start_date,
+	action_id AS action_id,
+	action_table AS table
+			FROM
+    			history
+			WHERE
+   				user_id = $1
+			ORDER BY
+ 				   createdat::date DESC,
+ 				   createdat DESC;
+`, [req.body.user_id]);
+
+	if (userData.rowCount > 0) {
+		const groupedData = {};
+
+		for (const row of userData.rows) {
+			const Data = await sql.query(`SELECT *
+            FROM
+                "${row.table}"
+            WHERE id::text = '${row.action_id}'`);
+			row.data = Data.rows;
+
+			const historyDate = row.history_date.toString();
+			if (!groupedData[historyDate]) {
+				groupedData[historyDate] = [];
+			}
+			groupedData[historyDate].push(row);
+		}
+
+		const result = Object.keys(groupedData).map(historyDate => {
+			return {
+				history_date: historyDate,
+				data: groupedData[historyDate]
+			};
+		});
+
+		res.json({
+			message: "User Progress Data",
+			status: true,
+			time_trained: time,
+			results: result,
+		});
+
+	} else {
+		res.json({
+			message: "No Progress Found",
+			status: false,
+		});
+	}
+}
+
+User.removeProgress = async (req, res) => {
+	const userData = await sql.query(`DELETE FROM "history" where 
+	user_id = $1`, [req.body.user_id]);
+	const Streak = await sql.query(`DELETE FROM "check_streak" where 
+	user_id = $1`, [req.body.user_id]);
+
+	res.json({
+		message: "Progress Restarted",
+		status: true,
+	});
+}
 
 
 

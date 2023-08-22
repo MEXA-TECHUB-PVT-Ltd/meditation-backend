@@ -19,6 +19,15 @@ exports.start = (req, res) => {
   }  
   MeditationPlan.start( req, res);
 };
+exports.UpdateAnimation = (req, res) => {
+  if (!req.body) {
+    res.json({
+      message: "Content can not be empty!",
+      status: false,
+     });
+  }  
+  MeditationPlan.UpdateAnimation( req, res);
+};
 
 exports.updateStartedPlan = (req, res) => {
   if (!req.body) {

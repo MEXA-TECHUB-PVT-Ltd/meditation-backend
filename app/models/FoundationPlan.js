@@ -181,6 +181,11 @@ FoundationPlan.createPlan = async (req, res) => {
 									});
 								}
 								else {
+									const History = sql.query(`INSERT INTO history (id ,user_id, action_id, action_type, 
+										action_table, start_date, status ,createdAt ,updatedAt )
+									VALUES (DEFAULT, $1  ,  $2, $3,  $4 ,$5,$6, 'NOW()', 'NOW()') RETURNING * `
+										, [req.body.user_id, req.body.plan_id, 'Re-Start Plan', 'foundation_plan',
+											'NOW()', 'started'])
 									res.json({
 										message: "Foundation Plan Created Successfully!",
 										status: true,
@@ -217,7 +222,10 @@ FoundationPlan.AddPlan = async (req, res) => {
 			status: false,
 		});
 	} else {
-		let { plan_name, description, days, plan_id, plan_type } = req.body;
+		let { plan_name, description, days, plan_id, plan_type, goals_id,
+			age_group,
+			level
+		} = req.body;
 		if (parseInt(days) !== parseInt(plan_id.length)) {
 			res.json({
 				message: "Select Plan According to days",
@@ -231,11 +239,15 @@ FoundationPlan.AddPlan = async (req, res) => {
 			// }
 			// if (data.rowCount > 0) {
 			const query = `INSERT INTO "foundation_plan"
-				 (id,plan_name,description, days ,plan_id,plan_type
-					 ,createdAt ,updatedAt )
-                            VALUES (DEFAULT, $1, $2, $3,$4,$5,'NOW()','NOW()' ) RETURNING * `;
+				 (id,plan_name,description, days ,plan_id,plan_type,
+					goals_id ,
+			age_group ,
+			level,createdAt ,updatedAt )
+                            VALUES (DEFAULT, $1, $2, $3,$4,$5,$6,$7,$8, 'NOW()','NOW()' ) RETURNING * `;
 			const foundResult = await sql.query(query,
-				[plan_name, description, days, plan_id, plan_type]);
+				[plan_name, description, days, plan_id, plan_type, goals_id,
+					age_group,
+					level]);
 			if (foundResult.rows.length > 0) {
 				res.json({
 					message: "Foundation Plan Added Successfully!",
@@ -272,93 +284,111 @@ FoundationPlan.viewAllPlan = async (req, res) => {
 	let foundation_plan;
 
 	if (!page || !limit) {
-		foundation_plan = await sql.query(`SELECT 
-		fp.id AS foundation_plan_id,
-		fp.plan_name AS foundation_plan_name,
-		fp.days,
-		fp.plan_type,
-		fp.description,
-		fp.createdat,
-		(
-			SELECT json_agg(
-				json_build_object(
-					'plan_name', s.plan_name,
-					'description', s.description,
-					'icon', s.icon,
-					'duration', s.duration,
-					'age_group', s.age_group,
-					'level', s.level,
-					'animations', s.animations,
-					'audio_files', s.audio_files,
-					'started_at', s.started_at,
-					'payment_status', s.payment_status,
-					'createdAt', s.createdat,
-					'skills', (
-						SELECT json_agg(json_build_object('skills', sk.*))
-						FROM skill sk
-						WHERE sk.id = ANY(s.skills_id)
-					),
-					'goals',(
-						SELECT json_agg(json_build_object('goals', g.*))
-						FROM goal g
-						WHERE g.id = ANY(s.goals_id)
+		foundation_plan = await sql.query(`WITH distinct_meditation_plans AS (
+			SELECT DISTINCT ON (id) id, plan_name,
+			 description, icon, duration, age_group, level, animations, 
+			 audio_files, started_at, payment_status, createdat, skills_id, 
+			 goals_id
+			FROM meditation_plan
+		)
+		SELECT
+			fp.id AS foundation_plan_id,
+			fp.plan_name AS foundation_plan_name,
+			fp.days,
+			fp.icon,
+			fp.goals_id ,
+			fp.age_group ,
+			fp.level,
+			fp.plan_type,
+			fp.plan_id,
+			fp.description,
+			fp.createdat,
+			(
+				SELECT json_agg(
+					json_build_object(
+						'plan_name', mp.plan_name,
+						'description', mp.description,
+						'icon', mp.icon,
+						'duration', mp.duration,
+						'age_group', mp.age_group,
+						'level', mp.level,
+						'animations', mp.animations,
+						'audio_files', mp.audio_files,
+						'started_at', mp.started_at,
+						'payment_status', mp.payment_status,
+						'createdAt', mp.createdat,
+						'skills', (
+							SELECT json_agg(json_build_object('skills', sk.*))
+							FROM skill sk
+							WHERE sk.id = ANY(mp.skills_id)
+						),
+						'goals', (
+							SELECT json_agg(json_build_object('goals', g.*))
+							FROM goal g
+							WHERE g.id = ANY(mp.goals_id)
+						)
 					)
 				)
-			)
-			FROM meditation_plan s
-			WHERE s.id = ANY(fp.plan_id) 
-		) AS plan
-	FROM
-		foundation_plan fp
-	JOIN
-		meditation_plan mp ON mp.id = ANY(fp.plan_id)
-	WHERE
-		fp.plan_type = $1
-	ORDER BY
-		"createdat" DESC;`, ['meditation_plan']);
+				FROM distinct_meditation_plans mp
+				WHERE mp.id = ANY(fp.plan_id)
+			) AS plan
+		FROM
+			foundation_plan fp
+		WHERE
+			fp.plan_type = $1
+		ORDER BY
+			"createdat" DESC;
+		`, ['meditation_plan']);
 
-		yoga_plan = await sql.query(`SELECT 
+		yoga_plan = await sql.query(`SELECT
 		fp.id AS foundation_plan_id,
 		fp.plan_name AS foundation_plan_name,
 		fp.days,
+		fp.icon,
+		fp.goals_id ,
+		fp.age_group ,
+		fp.level,
+		fp.plan_id,
 		fp.plan_type,
 		fp.description,
 		fp.createdat,
 		(
 			SELECT json_agg(
 				json_build_object(
-					'plan_name', s.plan_name,
-					'description', s.description,
-					'icon', s.icon,
-					'duration', s.duration,
-					'age_group', s.age_group,
-					'level', s.level,
-					'started_at', s.started_at,
-					'payment_status', s.payment_status,
-					'createdAt', s.createdat,
+					'plan_name', yp.plan_name,
+					'description', yp.description,
+					'icon', yp.icon,
+					'duration', yp.duration,
+					'age_group', yp.age_group,
+					'level', yp.level,
+					'started_at', yp.started_at,
+					'payment_status', yp.payment_status,
+					'createdAt', yp.createdat,
 					'skills', (
 						SELECT json_agg(json_build_object('skills', sk.*))
 						FROM skill sk
-						WHERE sk.id = ANY(s.skills_id)
+						WHERE sk.id = ANY(yp.skills_id)
 					),
-					'goals',(
+					'goals', (
 						SELECT json_agg(json_build_object('goals', g.*))
 						FROM goal g
-						WHERE g.id = ANY(s.goals_id)
+						WHERE g.id = ANY(yp.goals_id)
 					)
 				)
 			)
-			FROM yoga_plan s
-			WHERE s.id = ANY(fp.plan_id) 
+			FROM (
+				SELECT DISTINCT ON (yp.id) yp.id, yp.plan_name, yp.description, yp.icon, yp.duration, yp.age_group, yp.level, yp.started_at, yp.payment_status, yp.createdat, yp.skills_id, yp.goals_id
+				FROM yoga_plan yp
+				WHERE yp.id = ANY(fp.plan_id)
+			) yp
 		) AS plan
 	FROM
 		foundation_plan fp
-	JOIN
-	yoga_plan mp ON mp.id = ANY(fp.plan_id)
 	WHERE
 		fp.plan_type = $1
 	ORDER BY
-		"createdat" DESC;`, ['yoga_plan']);
+		"createdat" DESC;
+	`, ['yoga_plan']);
 
 	}
 	if (page && limit) {
@@ -368,6 +398,11 @@ FoundationPlan.viewAllPlan = async (req, res) => {
 		fp.id AS foundation_plan_id,
 		fp.plan_name AS foundation_plan_name,
 		fp.days,
+		fp.icon,
+		fp.goals_id ,
+		fp.age_group ,
+		fp.level,
+		fp.plan_id,
 		fp.plan_type,
 		fp.description,
 		fp.createdat,
@@ -413,6 +448,11 @@ FoundationPlan.viewAllPlan = async (req, res) => {
 		fp.id AS foundation_plan_id,
 		fp.plan_name AS foundation_plan_name,
 		fp.days,
+		fp.goals_id ,
+		fp.age_group ,
+		fp.level,
+		fp.icon,
+		fp.plan_id,
 		fp.plan_type,
 		fp.description,
 		fp.createdat,
@@ -1617,6 +1657,9 @@ FoundationPlan.search = async (req, res) => {
 		fp.id AS foundation_plan_id,
 		fp.plan_name AS foundation_plan_name,
 		fp.days,
+		fp.goals_id ,
+		fp.age_group ,
+		fp.level,
 		fp.plan_type,
 		fp.description,
 		fp.createdat,
@@ -1658,6 +1701,9 @@ FoundationPlan.search = async (req, res) => {
 		fp.id AS foundation_plan_id,
 		fp.plan_name AS foundation_plan_name,
 		fp.days,
+		fp.goals_id ,
+		fp.age_group ,
+		fp.level,
 		fp.plan_type,
 		fp.description,
 		fp.createdat,
@@ -1853,9 +1899,23 @@ FoundationPlan.update = async (req, res) => {
 				const olddays = RelaxationMusicData.rows[0].days;
 				const oldplan_id = RelaxationMusicData.rows[0].plan_id;
 				const oldplan_type = RelaxationMusicData.rows[0].plan_type;
+				const oldage_group = RelaxationMusicData.rows[0].age_group;
+				const oldlevel = RelaxationMusicData.rows[0].level;
+				const oldgoals_id = RelaxationMusicData.rows[0].goals_id;
 
-				let { id, plan_name, description, days, plan_id, plan_type } = req.body;
+				let { id, plan_name, description, days, plan_id, plan_type, goals_id,
+					age_group,
+					level } = req.body;
 
+				if (goals_id === undefined || goals_id === '') {
+					goals_id = oldgoals_id;
+				}
+				if (level === undefined || level === '') {
+					level = oldlevel;
+				}
+				if (age_group === undefined || age_group === '') {
+					age_group = oldage_group;
+				}
 
 				if (days === undefined || days === '') {
 					days = olddays;
@@ -1875,9 +1935,13 @@ FoundationPlan.update = async (req, res) => {
 				}
 
 				sql.query(`update "foundation_plan" SET plan_name = $1,
-		description = $2, days = $3, plan_id  = $4, plan_type= $5
-		WHERE id = $6;`,
-					[plan_name, description, days, plan_id, plan_type, id], async (err, result) => {
+		description = $2, days = $3, plan_id  = $4, plan_type= $5, goals_id = $6,
+		age_group = $7,
+		level = $8
+		WHERE id = $9;`,
+					[plan_name, description, days, plan_id, plan_type, goals_id,
+						age_group,
+						level , id], async (err, result) => {
 						if (err) {
 							console.log(err);
 							res.json({
@@ -1967,6 +2031,11 @@ FoundationPlan.start = async (req, res) => {
 						console.log("5");
 						const updatedPlan = await sql.query(`select * from "manage_foundation_plan" where plan_id = $1 AND user_id = $2`, [req.body.plan_id, req.body.user_id]);
 						console.log("5");
+						const History = sql.query(`INSERT INTO history (id ,user_id, action_id, action_type, 
+							action_table, start_date, status ,createdAt ,updatedAt )
+						VALUES (DEFAULT, $1  ,  $2, $3,  $4 ,$5,$6, 'NOW()', 'NOW()') RETURNING * `
+							, [req.body.user_id, req.body.plan_id, 'Re-Start Plan', 'foundation_plan',
+								'NOW()', 'started'])
 						res.json({
 							message: "Foundation Plan Re-Started (Progress 0%) Successfully!",
 							status: true,
@@ -1988,7 +2057,13 @@ FoundationPlan.start = async (req, res) => {
 
 					if (foundResult.rows.length > 0) {
 						console.log("6");
+						const History = sql.query(`INSERT INTO history (id ,user_id, action_id, action_type, 
+							action_table, start_date, status ,createdAt ,updatedAt )
+						VALUES (DEFAULT, $1  ,  $2, $3,  $4 ,$5,$6, 'NOW()', 'NOW()') RETURNING * `
+							, [req.body.user_id, req.body.plan_id, 'Start Plan', 'foundation_plan',
+								'NOW()', 'started'])
 						res.json({
+
 							message: "Foundation Plan Started Successfully!",
 							status: true,
 							result: foundResult.rows,

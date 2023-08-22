@@ -7,6 +7,7 @@ let router = require("express").Router();
 
 router.post("/add",upload.array('audio_files'), MeditationPlan.create);
 router.post("/add_animations",upload.array('animations'), MeditationPlan.addAnimation);
+router.put("/update_animation",upload.array('animations'), MeditationPlan.UpdateAnimation);
 router.post("/add_audio_file",upload.array('audio_files'), MeditationPlan.addAudioFile);
 router.post("/add_icon",upload.single('icon'), MeditationPlan.addIcon);
 router.post("/view_specific", MeditationPlan.viewSpecific);

@@ -1000,9 +1000,6 @@ YogaPlan.start = async (req, res) => {
 											}
 	
 
-
-
-
 										const managePlan = await sql.query(`select * from "manage_yoga_plan" 
 											where plan_id = $1 AND user_id = $2`, [req.body.plan_id, req.body.user_id]);
 										if (managePlan.rowCount > 0) {
@@ -1014,6 +1011,12 @@ YogaPlan.start = async (req, res) => {
 												req.body.plan_id, req.body.user_id]);
 											if (managePlan.rowCount > 0) {
 												const updatedPlan = await sql.query(`select * from "manage_yoga_plan" where plan_id = $1 AND user_id = $2`, [req.body.plan_id, req.body.user_id]);
+												const History = sql.query(`INSERT INTO history (id ,user_id, action_id, action_type, 
+													action_table, start_date, status ,createdAt ,updatedAt )
+												VALUES (DEFAULT, $1  ,  $2, $3,  $4 ,$5,$6, 'NOW()', 'NOW()') RETURNING * `
+													, [req.body.user_id, req.body.plan_id, 'Re-Start Plan', 'yoga_plan',
+													'NOW()',  'started'])
+
 												res.json({
 													message: "Yoga Plan Re-Started (Progress 0%) Successfully!",
 													status: true,
@@ -1043,6 +1046,12 @@ YogaPlan.start = async (req, res) => {
 													});
 												}
 												else {
+													const History = sql.query(`INSERT INTO history (id ,user_id, action_id, action_type, 
+														action_table, start_date, status ,createdAt ,updatedAt )
+													VALUES (DEFAULT, $1  ,  $2, $3,  $4 ,$5,$6, 'NOW()', 'NOW()') RETURNING * `
+														, [req.body.user_id, req.body.plan_id, 'Start Plan', 'Yoga_plan',
+														'NOW()',  'started'])
+	
 													res.json({
 														message: "Yoga Plan Started Successfully!",
 														status: true,

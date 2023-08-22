@@ -66,94 +66,71 @@ Skill.create = async (req, res) => {
 
 
 Skill.viewProgressAll = async (req, res) => {
-	let skill_id = req.body.skill_id; 
+
+	const skills = await sql.query(`SELECT * FROM "skill"`);
+	let skillResults = [];
+	
 	let user_id = req.body.user_id;
-
-	const YogaPlanTotal = await sql.query(
-		`SELECT COUNT(*) AS YogaTotal FROM "yoga_plan" WHERE $1 = ANY(skills_id) 
-		`,
-		[skill_id]
-	);
-	const MeditationPlanTotal = await sql.query(
-		`SELECT COUNT(*) AS MeditationTotal FROM "meditation_plan"  WHERE $1 = ANY(skills_id) 
-		`,
-		[skill_id]
-	);
-	console.log(MeditationPlanTotal.rows);
-
-	const FoundationPlanTotalMeditation = await sql.query(
-
-		`SELECT COUNT(*) AS FoundationTotal1 FROM "foundation_plan" 
-		JOIN "meditation_plan" ON "meditation_plan"."id" = ANY("foundation_plan"."plan_id")
-		WHERE $1 = ANY(skills_id)  
-		AND "foundation_plan".plan_type = $2 `,
-		[skill_id, 'meditation_plan']
-	);
-	console.log(FoundationPlanTotalMeditation.rows);
-	const FoundationPlanTotalYoga = await sql.query(
-		`SELECT COUNT(*) AS FoundationTotal2 FROM "foundation_plan" 
-		JOIN "yoga_plan" ON  "yoga_plan"."id" = ANY("foundation_plan"."plan_id")
-		WHERE $1 = ANY(skills_id) 
-		 AND "foundation_plan".plan_type = $2 `,
-		[skill_id, 'yoga_plan']
-	);
-
-	console.log(FoundationPlanTotalYoga.rows);
-
-
-	const YogaPlanCompleted = await sql.query(
-		`SELECT COUNT(*) AS YogaCompleted FROM  "manage_yoga_plan" WHERE $1 = ANY(skills_id_completed) 
-		AND "manage_yoga_plan".user_id = $2`,
-		[skill_id, user_id]
-	);
-
-	const MeditationPlanCompleted = await sql.query(
-		`SELECT COUNT(*) AS MeditationCompleted FROM "manage_meditation_plan" WHERE $1 = ANY(skills_id_completed) 
-		AND "manage_meditation_plan".user_id = $2`,
-		[skill_id, user_id]
-	);
-
-	const FoundationPlanCompleted = await sql.query(
-		`SELECT COUNT(*) AS FoundationCompleted FROM "manage_foundation_plan" WHERE $1 = ANY(skills_id_completed) 
-		AND "manage_foundation_plan".user_id = $2`,
-		[skill_id, user_id]
-	);
-
-	const completed = (
-		parseInt(FoundationPlanCompleted.rows[0].foundationcompleted)
-		+ parseInt(YogaPlanCompleted.rows[0].yogacompleted)
-		+ parseInt(MeditationPlanCompleted.rows[0].meditationcompleted));
-	console.log(completed);
-
-	const total = (
-		parseInt(FoundationPlanTotalYoga.rows[0].foundationtotal2) +
-			parseInt(FoundationPlanTotalMeditation.rows[0].foundationtotal1) +
-			parseInt(YogaPlanTotal.rows[0].yogatotal) +
-		parseInt(MeditationPlanTotal.rows[0].meditationtotal)
+	
+	const queryPromises = skills.rows.map(async (skill) => {
+		const skill_id = skill.id;
+		const [YogaPlanTotal, MeditationPlanTotal, FoundationPlanTotalMeditation, FoundationPlanTotalYoga, YogaPlanCompleted, MeditationPlanCompleted, FoundationPlanCompleted] = await Promise.all([
+			sql.query(`SELECT COUNT(*) AS YogaTotal  FROM "yoga_plan" WHERE $1 = ANY(skills_id) `, [skill_id]),
+			sql.query(`SELECT COUNT(*) AS MeditationTotal  FROM "meditation_plan"  WHERE $1 = ANY(skills_id) `, [skill_id]),
+			sql.query(`SELECT COUNT(*) AS FoundationTotal1 FROM "foundation_plan" 
+				JOIN "meditation_plan" ON "meditation_plan"."id" = ANY("foundation_plan"."plan_id")
+				WHERE $1 = ANY(skills_id)  
+				AND "foundation_plan".plan_type = $2 `, [skill_id, 'meditation_plan']),
+			sql.query(`SELECT COUNT(*) AS FoundationTotal2 FROM "foundation_plan" 
+				JOIN "yoga_plan" ON  "yoga_plan"."id" = ANY("foundation_plan"."plan_id")
+				WHERE $1 = ANY(skills_id) 
+				AND "foundation_plan".plan_type = $2 `, [skill_id, 'yoga_plan']),
+			sql.query(`SELECT COUNT(*) AS YogaCompleted FROM  "manage_yoga_plan" WHERE $1 = ANY(skills_id_completed) 
+				AND "manage_yoga_plan".user_id = $2`, [skill_id, user_id]),
+			sql.query(`SELECT COUNT(*) AS MeditationCompleted FROM "manage_meditation_plan" WHERE $1 = ANY(skills_id_completed) 
+				AND "manage_meditation_plan".user_id = $2`, [skill_id, user_id]),
+			sql.query(`SELECT COUNT(*) AS FoundationCompleted FROM "manage_foundation_plan" WHERE $1 = ANY(skills_id_completed) 
+				AND "manage_foundation_plan".user_id = $2`, [skill_id, user_id])
+		]);
+	
+		const completed = (
+			parseInt(FoundationPlanCompleted.rows[0].foundationcompleted)
+			+ parseInt(YogaPlanCompleted.rows[0].yogacompleted)
+			+ parseInt(MeditationPlanCompleted.rows[0].meditationcompleted)
 		);
-	sql.query(`SELECT COUNT(*) AS COUNT FROM "yoga_plan" WHERE $1 = ANY(skills_id)`
-		, [skill_id], (err, result) => {
-			if (err) {
-				console.log(err);
-				res.json({
-					message: "Try Again",
-					status: false,
-					err
-				});
-			} else {
-				res.json({
-					message: "Skill Progress",
-					status: true,
-					total: total,
-					completed: completed
-				});
-			}
+	
+		const total = (
+			parseInt(FoundationPlanTotalYoga.rows[0].foundationtotal2)
+			+ parseInt(FoundationPlanTotalMeditation.rows[0].foundationtotal1)
+			+ parseInt(YogaPlanTotal.rows[0].yogatotal)
+			+ parseInt(MeditationPlanTotal.rows[0].meditationtotal)
+		);
+	
+		skillResults.push({
+			skill_id: skill_id,
+			skill_name: skill.skill_name,
+			description: skill.discription,
+			benefit: skill.benefit,
+			icon: skill.icon,
+			total: total,
+			completed: completed
 		});
+	});
+	
+	await Promise.all(queryPromises);
+	
+	res.json({
+		message: "Skill Progress",
+		status: true,
+		result: skillResults
+	});
+	
+
 }
 
 
 Skill.viewProgress = async (req, res) => {
-	let skill_id = req.body.skill_id; 
+	let skill_id = req.body.skill_id;
 	let user_id = req.body.user_id;
 	const YogaPlanTotal = await sql.query(
 		`SELECT COUNT(*) AS YogaTotal FROM "yoga_plan" JOIN "manage_yoga_plan" ON 
@@ -212,10 +189,10 @@ Skill.viewProgress = async (req, res) => {
 
 	const total = (
 		parseInt(FoundationPlanTotalYoga.rows[0].foundationtotal2) +
-			parseInt(FoundationPlanTotalMeditation.rows[0].foundationtotal1) +
-			parseInt(YogaPlanTotal.rows[0].yogatotal) +
+		parseInt(FoundationPlanTotalMeditation.rows[0].foundationtotal1) +
+		parseInt(YogaPlanTotal.rows[0].yogatotal) +
 		parseInt(MeditationPlanTotal.rows[0].meditationtotal)
-		);
+	);
 	sql.query(`SELECT COUNT(*) AS COUNT FROM "yoga_plan" WHERE $1 = ANY(skills_id)`
 		, [skill_id], (err, result) => {
 			if (err) {

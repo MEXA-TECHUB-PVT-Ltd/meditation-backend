@@ -48,13 +48,13 @@ MeditationPlan.create = async (req, res) => {
 					status: false,
 				});
 			} else {
+				console.log(req.body);
 				const { plan_name, description, duration, goals_id, age_group,
 					level, skills_id,
 					started_at,
 					payment_status,
 					progress_status } = req.body;
 				let audio_file = [];
-				console.log(req.files);
 				if (req.files) {
 					for (let i = 0; i < req.files.length; i++) {
 						audio_file[i] = req.files[i].path
@@ -386,7 +386,6 @@ MeditationPlan.addAudioFile = async (req, res) => {
 
 			let photo = userData.rows[0].audio_files;
 			let { id } = req.body;
-			console.log(req.files)
 			if (req.files) {
 				for (let i = 0; i < req.files.length; i++) {
 					photo[i] = req.files[i].path
@@ -426,6 +425,7 @@ MeditationPlan.addAudioFile = async (req, res) => {
 		}
 	}
 }
+
 MeditationPlan.addAnimation = async (req, res) => {
 	if (req.body.id === '') {
 		res.json({
@@ -433,15 +433,15 @@ MeditationPlan.addAnimation = async (req, res) => {
 			status: false,
 		});
 	} else {
+		console.log(req.body)
 		const userData = await sql.query(`select * from "meditation_plan" where id = $1`, [req.body.id]);
 		if (userData.rowCount === 1) {
 
 			let photo = userData.rows[0].animations;
 			let { id } = req.body;
-			console.log(req.files)
 			if (req.files) {
 				for (let i = 0; i < req.files.length; i++) {
-					photo[i] = req.files[i].path
+					photo.unshift(req.files[i].path);
 				}
 			}
 
@@ -458,7 +458,7 @@ MeditationPlan.addAnimation = async (req, res) => {
 						if (result.rowCount === 1) {
 							const data = await sql.query(`select * from "meditation_plan" where id = $1`, [req.body.id]);
 							res.json({
-								message: "Meditation Plan's Animation added Successfully!",
+								message: "Meditation Plan Animation added Successfully!",
 								status: true,
 								result: data.rows,
 							});
@@ -478,6 +478,7 @@ MeditationPlan.addAnimation = async (req, res) => {
 		}
 	}
 }
+
 MeditationPlan.addIcon = async (req, res) => {
 	if (req.body.id === '') {
 		res.json({
@@ -652,6 +653,7 @@ MeditationPlan.changePlanStatus = async (req, res) => {
 				} else
 					if (result.rowCount > 0) {
 						const data = await sql.query(`select * from "meditation_plan" where id = $1`, [req.body.id]);
+												
 						res.json({
 							message: "meditation Plan status Updated Successfully!",
 							status: true,
@@ -758,8 +760,6 @@ MeditationPlan.update = async (req, res) => {
 			const oldDuration = RelaxationMusicData.rows[0].duration;
 			const oldgoals_id = RelaxationMusicData.rows[0].goals_id;
 			const oldage_group = RelaxationMusicData.rows[0].age_group;
-
-
 			const oldLevel = RelaxationMusicData.rows[0].level;
 			const oldSkills_id = RelaxationMusicData.rows[0].skills_id;
 			const oldStarted_at = RelaxationMusicData.rows[0].started_at;
@@ -928,7 +928,7 @@ MeditationPlan.start = async (req, res) => {
 											duration } = req.body;
 
 
-											
+
 										const CheckStreak = await sql.query(`select * from "check_streak" where user_id = $1`, [user_id]);
 										if (CheckStreak.rowCount > 0) {
 											let oldstreak_start_date = CheckStreak.rows[0].streak_start_date;
@@ -964,7 +964,14 @@ MeditationPlan.start = async (req, res) => {
 												[[], null, [], started_at, progress_status, duration,
 												req.body.plan_id, req.body.user_id]);
 											if (managePlan.rowCount > 0) {
-												const updatedPlan = await sql.query(`select * from "manage_meditation_plan" where plan_id = $1 AND user_id = $2`, [req.body.plan_id, req.body.user_id]);
+												const updatedPlan = await sql.query(`select * from "manage_meditation_plan" where plan_id = $1
+												 AND user_id = $2`, [req.body.plan_id, req.body.user_id]);
+
+												const History = sql.query(`INSERT INTO history (id ,user_id, action_id, action_type, 
+													action_table, start_date, status ,createdAt ,updatedAt )
+												VALUES (DEFAULT, $1  ,  $2, $3,  $4 ,$5,$6, 'NOW()', 'NOW()') RETURNING * `
+													, [req.body.user_id, req.body.plan_id, 'Re-Start Plan', 'meditation_plan',
+													'NOW()',  'started'])
 												res.json({
 													message: "Meditation Plan Re-Started (Progress 0%) Successfully!",
 													status: true,
@@ -994,7 +1001,12 @@ MeditationPlan.start = async (req, res) => {
 													});
 												}
 												else {
-													res.json({
+													const History = sql.query(`INSERT INTO history (id ,user_id, action_id, action_type, 
+														action_table, start_date, status ,createdAt ,updatedAt )
+													VALUES (DEFAULT, $1  ,  $2, $3,  $4 ,$5,$6, 'NOW()', 'NOW()') RETURNING * `
+														, [req.body.user_id, req.body.plan_id, 'Start Plan', 'meditation_plan',
+														'NOW()', 'started'])
+														res.json({
 														message: "Meditation Plan Started Successfully!",
 														status: true,
 														result: foundResult.rows,
@@ -1029,6 +1041,91 @@ MeditationPlan.start = async (req, res) => {
 		}
 	}
 }
+
+MeditationPlan.UpdateAnimation = async (req, res) => {
+	if (req.body.id === '') {
+		res.json({
+			message: "id is required",
+			status: false,
+		});
+	} else {
+		console.log(req.body)
+		const userData = await sql.query(`select * from "meditation_plan" where id = $1`, [req.body.id]);
+		if (userData.rowCount === 1) {
+
+			let photo = userData.rows[0].animations;
+			let { id, location, type } = req.body;
+			console.log(req.files)
+			if (req.files) {
+				if (type == 'add') {
+					photo[location] = req.files[0].path;
+					sql.query(`UPDATE "meditation_plan" SET animations = $1 WHERE id = $2;`,
+						[photo, id], async (err, result) => {
+							if (err) {
+								console.log(err);
+								res.json({
+									message: "Try Again",
+									status: false,
+									err
+								});
+							} else {
+								if (result.rowCount === 1) {
+									const data = await sql.query(`select * from "meditation_plan" where id = $1`, [req.body.id]);
+									res.json({
+										message: "Meditation Plan Animation added Successfully!",
+										status: true,
+										result: data.rows,
+									});
+								} else if (result.rowCount === 0) {
+									res.json({
+										message: "Not Found",
+										status: false,
+									});
+								}
+							}
+						});
+				} else {
+					const finalLocation = parseInt(location) + 1;
+					console.log(finalLocation);
+					sql.query(
+						`UPDATE "meditation_plan" SET animations = animations[:$1 - 1] || animations[$1 + 1:] WHERE id = $2;`,
+						[finalLocation, id], async (err, result) => {
+							if (err) {
+								console.log(err);
+								res.json({
+									message: "Try Again",
+									status: false,
+									err
+								});
+							} else {
+								if (result.rowCount === 1) {
+									const data = await sql.query(`select * from "meditation_plan" where id = $1`, [req.body.id]);
+									res.json({
+										message: "Meditation Plan Animation added Successfully!",
+										status: true,
+										result: data.rows,
+									});
+								} else if (result.rowCount === 0) {
+									res.json({
+										message: "Not Found",
+										status: false,
+									});
+								}
+							}
+						});
+
+				}
+			}
+		} else {
+			res.json({
+				message: "Not Found",
+				status: false,
+			});
+		}
+	}
+}
+
+
 
 MeditationPlan.updateStartedPlan = async (req, res) => {
 	if (req.body.plan_id === '') {
@@ -1095,6 +1192,16 @@ MeditationPlan.updateStartedPlan = async (req, res) => {
 							} else {
 								if (result.rowCount === 1) {
 									const updatedPlan = await sql.query(`select * from "manage_meditation_plan" where plan_id = $1 AND user_id = $2`, [req.body.plan_id, req.body.user_id]);
+									if(progress_status === 'completed'){
+										// const History = sql.query(`INSERT INTO history (id ,user_id, action_id, action_type, 
+										// 	action_table, start_date, status ,createdAt ,updatedAt )
+										// VALUES (DEFAULT, $1  ,  $2, $3,  $4 ,$5,$6, 'NOW()', 'NOW()') RETURNING * `
+										// 	, [req.body.user_ID, req.body.plan_id, 'Start Plan', 'meditation_plan',
+
+										const History = sql.query(`UPDATE history SET end_date = $1 , updatedAt = $2
+										WHERE  user_id = $3 AND action_id = $4`
+											, ['NOW()', 'NOW()', req.body.user_ID, updatedPlan.rows[0].plan_id])	
+									}			
 									res.json({
 										message: "Meditation Plan Updated Successfully!",
 										status: true,
