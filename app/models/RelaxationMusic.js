@@ -94,11 +94,11 @@ RelaxationMusic.addAudioFile = async (req, res) => {
 	} else {
 		const userData = await sql.query(`select * from "relaxation_music" where id = $1`, [req.body.id]);
 		if (userData.rowCount === 1) {
-
 			let photo = userData.rows[0].audio_file;
 			let { id } = req.body;
-			console.log(req.file)
+			console.log(id);
 			if (req.file) {
+				console.log(req.file);
 				const { path } = req.file;
 				photo = path;
 			}
@@ -116,7 +116,7 @@ RelaxationMusic.addAudioFile = async (req, res) => {
 						if (result.rowCount === 1) {
 							const data = await sql.query(`select * from "relaxation_music" where id = $1`, [req.body.id]);
 							res.json({
-								message: " Audio File added Successfully!",
+								message: "Audio File added Successfully!",
 								status: true,
 								result: data.rows,
 							});

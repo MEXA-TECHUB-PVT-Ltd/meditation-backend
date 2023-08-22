@@ -2163,6 +2163,13 @@ FoundationPlan.updateStartedPlan = async (req, res) => {
 							} else {
 								if (result.rowCount === 1) {
 									const updatedPlan = await sql.query(`select * from "manage_foundation_plan" where plan_id = $1 AND user_id = $2`, [req.body.plan_id, req.body.user_id]);
+									if(progress_status === 'completed'){
+										const History = sql.query(`UPDATE history SET end_date = $1 , updatedAt = $2
+										, status = $3
+										WHERE  user_id = $4 AND action_id = $5 AND action_table = $6`
+											, ['NOW()', 'NOW()', 'completed' ,req.body.user_id, req.body.plan_id, 'foundation_plan'])	
+									}			
+
 									res.json({
 										message: "Foundation Plan Updated Successfully!",
 										status: true,

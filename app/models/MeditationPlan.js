@@ -653,7 +653,7 @@ MeditationPlan.changePlanStatus = async (req, res) => {
 				} else
 					if (result.rowCount > 0) {
 						const data = await sql.query(`select * from "meditation_plan" where id = $1`, [req.body.id]);
-												
+
 						res.json({
 							message: "meditation Plan status Updated Successfully!",
 							status: true,
@@ -971,7 +971,7 @@ MeditationPlan.start = async (req, res) => {
 													action_table, start_date, status ,createdAt ,updatedAt )
 												VALUES (DEFAULT, $1  ,  $2, $3,  $4 ,$5,$6, 'NOW()', 'NOW()') RETURNING * `
 													, [req.body.user_id, req.body.plan_id, 'Re-Start Plan', 'meditation_plan',
-													'NOW()',  'started'])
+														'NOW()', 'started'])
 												res.json({
 													message: "Meditation Plan Re-Started (Progress 0%) Successfully!",
 													status: true,
@@ -1005,8 +1005,8 @@ MeditationPlan.start = async (req, res) => {
 														action_table, start_date, status ,createdAt ,updatedAt )
 													VALUES (DEFAULT, $1  ,  $2, $3,  $4 ,$5,$6, 'NOW()', 'NOW()') RETURNING * `
 														, [req.body.user_id, req.body.plan_id, 'Start Plan', 'meditation_plan',
-														'NOW()', 'started'])
-														res.json({
+															'NOW()', 'started'])
+													res.json({
 														message: "Meditation Plan Started Successfully!",
 														status: true,
 														result: foundResult.rows,
@@ -1192,16 +1192,12 @@ MeditationPlan.updateStartedPlan = async (req, res) => {
 							} else {
 								if (result.rowCount === 1) {
 									const updatedPlan = await sql.query(`select * from "manage_meditation_plan" where plan_id = $1 AND user_id = $2`, [req.body.plan_id, req.body.user_id]);
-									if(progress_status === 'completed'){
-										// const History = sql.query(`INSERT INTO history (id ,user_id, action_id, action_type, 
-										// 	action_table, start_date, status ,createdAt ,updatedAt )
-										// VALUES (DEFAULT, $1  ,  $2, $3,  $4 ,$5,$6, 'NOW()', 'NOW()') RETURNING * `
-										// 	, [req.body.user_ID, req.body.plan_id, 'Start Plan', 'meditation_plan',
-
+									if (progress_status === 'completed') {
 										const History = sql.query(`UPDATE history SET end_date = $1 , updatedAt = $2
-										WHERE  user_id = $3 AND action_id = $4`
-											, ['NOW()', 'NOW()', req.body.user_ID, updatedPlan.rows[0].plan_id])	
-									}			
+										, status = $3
+										WHERE  user_id = $4 AND action_id = $5 AND action_table = $6`
+											, ['NOW()', 'completed', 'NOW()', req.body.user_id, req.body.plan_id, 'meditation_plan'])
+									}
 									res.json({
 										message: "Meditation Plan Updated Successfully!",
 										status: true,
