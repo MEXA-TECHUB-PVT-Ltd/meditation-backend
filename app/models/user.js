@@ -8,6 +8,7 @@ const User = function (User) {
 	this.password = User.password;
 	this.image = User.image;
 	this.status = User.status;
+	this.subscription_status = User.subscription_status;
 
 };
 User.create = async (req, res) => {
@@ -23,6 +24,7 @@ User.create = async (req, res) => {
 		badge_id integer,
         image   text ,
         status text,
+		subscription_status text,
         createdAt timestamp,
         updatedAt timestamp ,
         PRIMARY KEY (id));` , async (err, result) => {
@@ -62,10 +64,11 @@ User.create = async (req, res) => {
 						photo = path;
 					}
 
-					const query = `INSERT INTO "user" (id, username ,email,password, gender, level ,goals,age, badge_id,image, status  ,createdat ,updatedat )
-                            VALUES (DEFAULT, $1, $2,$3, $4, $5 ,$6,$7,$8,$9,$10, 'NOW()','NOW()' ) RETURNING * `;
+					const query = `INSERT INTO "user" (id, username ,email,password, gender, 
+						level ,goals,age, badge_id,image, status , subscription_status ,createdat ,updatedat )
+                            VALUES (DEFAULT, $1, $2,$3, $4, $5 ,$6,$7,$8,$9,$10,$11, 'NOW()','NOW()' ) RETURNING * `;
 					const foundResult = await sql.query(query,
-						[username, email, hashpassword, gender, level, goals, age, badge_id, photo, 'unblock']);
+						[username, email, hashpassword, gender, level, goals, age, badge_id, photo, 'unblock', subscription_status]);
 					if (foundResult.rows.length > 0) {
 						if (err) {
 							res.json({
@@ -304,6 +307,137 @@ User.updateProfile = async (req, res) => {
 	}
 }
 
+User.updateSubscription = async (req, res) => {
+	if (req.body.id === '') {
+		res.json({
+			message: "id is required",
+			status: false,
+		});
+	} else {
+		const userData = await sql.query(`select * from "user" where id = $1`, [req.body.id]);
+		if (userData.rowCount === 1) {
+			let { id, subscription_status } = req.body;
+
+
+			const Old_subscription_status = userData.rows[0].subscription_status;
+
+
+			if (subscription_status === undefined || subscription_status === '') {
+				subscription_status = Old_subscription_status;
+			}
+			sql.query(`UPDATE "user" SET subscription_status = $1 WHERE id = $2;`,
+				[subscription_status, id], async (err, result) => {
+					if (err) {
+						console.log(err);
+						res.json({
+							message: "Try Again",
+							status: false,
+							err
+						});
+					} else {
+						if (result.rowCount > 0) {
+							const data = await sql.query(`select * from "user" where id = $1`, [req.body.id]);
+							res.json({
+								message: "Subscription Change Successfully!",
+								status: true,
+								result: data.rows,
+							});
+						} else {
+							res.json({
+								message: "Not Found",
+								status: false,
+							});
+						}
+					}
+				});
+		} else {
+			res.json({
+				message: "Not Found",
+				status: false,
+			});
+		}
+	}
+}
+
+User.SubscribedUsers = async (req, res) => {
+	sql.query(`SELECT *  FROM "user" WHERE  subscription_status = $1`, ['subscribed'], (err, result) => {
+		if (err) {
+			console.log(err);
+			res.json({
+				message: "Try Again",
+				status: false,
+				err
+			});
+		} else {
+			res.json({
+				message: "Users Subscription Details",
+				status: true,
+				result: result.rows
+			});
+		}
+	});
+}
+
+
+User.AllPlansUser = async (req, res) => {
+	let limit = req.body.limit;
+	let page = req.body.page;
+	let meditation_plan;
+	let yoga_plan;
+	let foundation_plan;
+
+	if (!page || !limit) {
+		meditation_plan = await sql.query(`SELECT manage_meditation_plan.* , "meditation_plan".* FROM "manage_meditation_plan" 
+		JOIN "meditation_plan" ON "manage_meditation_plan".plan_id = "meditation_plan".id
+		where "manage_meditation_plan".user_id = $1
+		ORDER BY "manage_meditation_plan".createdat DESC`, [req.body.user_id]);
+		yoga_plan = await sql.query(`SELECT manage_yoga_plan.* , "yoga_plan".* FROM "manage_yoga_plan" 
+		JOIN "yoga_plan" ON "manage_yoga_plan".plan_id = "yoga_plan".id
+		where "manage_yoga_plan".user_id = $1
+		ORDER BY "manage_yoga_plan".createdat DESC`, [req.body.user_id]);
+		foundation_plan = await sql.query(`SELECT manage_foundation_plan.* , "foundation_plan".* FROM "manage_foundation_plan" 
+		JOIN "foundation_plan" ON "manage_foundation_plan".plan_id = "foundation_plan".id
+		where "manage_foundation_plan".user_id = $1
+		ORDER BY "manage_foundation_plan".createdat DESC`, [req.body.user_id]);
+	}
+	if (page && limit) {
+		limit = parseInt(limit);
+		let offset = (parseInt(page) - 1) * limit
+		meditation_plan = await sql.query(`SELECT manage_meditation_plan.* , "meditation_plan".* FROM "manage_meditation_plan" 
+		JOIN "meditation_plan" ON "manage_meditation_plan".plan_id = "meditation_plan".id
+		where "manage_meditation_plan".user_id = $1
+		ORDER BY "manage_meditation_plan".createdat DESC
+		LIMIT $2 OFFSET $3 ` , [req.body.user_id, limit, offset]);
+		yoga_plan = await sql.query(`SELECT manage_yoga_plan.* , "yoga_plan".* FROM "manage_yoga_plan" 
+		JOIN "yoga_plan" ON "manage_yoga_plan".plan_id = "yoga_plan".id
+		where "manage_yoga_plan".user_id = $1
+		ORDER BY "manage_yoga_plan".createdat DESC
+		LIMIT $2 OFFSET $3 ` , [req.body.user_id, limit, offset]);
+		foundation_plan = await sql.query(`SELECT manage_foundation_plan.* , "foundation_plan".* FROM "manage_foundation_plan" 
+		JOIN "foundation_plan" ON "manage_foundation_plan".plan_id = "foundation_plan".id
+		where "manage_foundation_plan".user_id = $1
+		ORDER BY "manage_foundation_plan".createdat DESC
+		LIMIT $2 OFFSET $3 ` , [req.body.user_id, limit, offset]);
+	}
+	if (meditation_plan.rows || yoga_plan.rows || foundation_plan.rows) {
+		let contactedArray = [...meditation_plan.rows, ...yoga_plan.rows, ...foundation_plan.rows];
+		res.json({
+			message: "All Plans Details",
+			status: true,
+			count: contactedArray.length,
+			result: contactedArray,
+		});
+	} else {
+		res.json({
+			message: "could not fetch",
+			status: false
+		})
+	}
+}
+
+
+
+
 
 User.SpecificUser = async (req, res) => {
 	sql.query(`SELECT *  FROM "user" WHERE  id = $1`, [req.params.id], (err, result) => {
@@ -478,11 +612,9 @@ User.newPassword = async (req, res) => {
 		});
 	}
 }
-
-
-User.getYears = (req, res) => {
+User.getYearsMeditation = (req, res) => {
 	sql.query(`SELECT EXTRACT(year FROM  createdat) AS year
-	FROM "user" 
+	FROM "meditation_plan" 
 	GROUP BY EXTRACT(year FROM createdat )
 	ORDER BY year `, (err, result) => {
 		if (err) {
@@ -502,26 +634,14 @@ User.getYears = (req, res) => {
 	});
 
 }
-User.getAllUsers_MonthWise_count = (req, res) => {
+User.getAllMeditation_MonthWise_count = (req, res) => {
 	sql.query(`
 	SELECT months.month, COUNT(u.createdat) AS count FROM (
     SELECT generate_series(1, 12) AS month ) AS months
-	LEFT JOIN "user" AS u ON EXTRACT(month FROM u.createdat) = months.month
+	LEFT JOIN "meditation_plan" AS u ON EXTRACT(month FROM u.createdat) = months.month
 	AND EXTRACT(year FROM u.createdat) = $1 GROUP BY months.month 
 	ORDER BY months.month;`,
 		[req.body.year], (err, result) => {
-			// for (let i = 0; i < 12; i++) {
-			// 	if (result.rows[i]) {
-			// 		console.log(result.rows[i]);
-			// 		if (result.rows[i].month !== [i]) {
-			// 			result.rows[i] = {
-			// 				month: i,
-			// 				count: "0"
-			// 			}
-			// 		}
-			// 	}
-			// }
-
 			if (err) {
 				console.log(err);
 				res.json({
@@ -579,8 +699,8 @@ User.getHistory = async (req, res) => {
  				   createdat DESC;
 `, [req.body.user_id]);
 
-	async  function calculateRemainingTime() {
-		const userId = req.body.user_id; 
+	async function calculateRemainingTime() {
+		const userId = req.body.user_id;
 		const data = await fetchData(userId);
 		let final = 0;
 		data.forEach(row => {
@@ -662,6 +782,66 @@ User.removeProgress = async (req, res) => {
 	});
 }
 
+User.getYears = (req, res) => {
+	sql.query(`SELECT EXTRACT(year FROM  createdat) AS year
+	FROM "yoga_plan" 
+	GROUP BY EXTRACT(year FROM createdat )
+	ORDER BY year `, (err, result) => {
+		if (err) {
+			console.log(err);
+			res.json({
+				message: "Try Again",
+				status: false,
+				err
+			});
+		} else {
+			res.json({
+				message: "user table's years",
+				status: true,
+				result: result.rows,
+			});
+		}
+	});
+
+}
+User.getAllUsers_MonthWise_count = (req, res) => {
+	sql.query(`
+	SELECT months.month, COUNT(u.createdat) AS count FROM (
+    SELECT generate_series(1, 12) AS month ) AS months
+	LEFT JOIN "yoga_plan" AS u ON EXTRACT(month FROM u.createdat) = months.month
+	AND EXTRACT(year FROM u.createdat) = $1 GROUP BY months.month 
+	ORDER BY months.month;`,
+		[req.body.year], (err, result) => {
+			// for (let i = 0; i < 12; i++) {
+			// 	if (result.rows[i]) {
+			// 		console.log(result.rows[i]);
+			// 		if (result.rows[i].month !== [i]) {
+			// 			result.rows[i] = {
+			// 				month: i,
+			// 				count: "0"
+			// 			}
+			// 		}
+			// 	}
+			// }
+
+			if (err) {
+				console.log(err);
+				res.json({
+					message: "Try Again",
+					status: false,
+					err
+				});
+			} else {
+				console.log(result.rows);
+				res.json({
+					message: "Monthly added Users",
+					status: true,
+					result: result.rows,
+				});
+			}
+		});
+
+}
 
 
 

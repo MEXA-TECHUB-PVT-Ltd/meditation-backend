@@ -138,9 +138,9 @@ Favorites.viewAll = async (req, res) => {
 		 FROM "favorites"  JOIN "yoga_plan" ON  "favorites".favorites_id = yoga_plan.id WHERE "favorites".user_id = $1 AND "favorites".fav_type = $2 ORDER BY "createdat" DESC
 		LIMIT $3 OFFSET $4 ` , [req.body.user_id,'yoga_plan',limit, offset]);
 
-	// 	foundation_plan = await sql.query(`SELECT "favorites".fav_type , "foundation_plan".* 
-	// 	FROM "favorites"  JOIN "foundation_plan" ON  "favorites".favorites_id = foundation_plan.id WHERE "favorites".user_id = $1 AND "favorites".fav_type = $2 ORDER BY "createdat" DESC
-	//    LIMIT $3 OFFSET $4 ` , [req.body.user_id,'foundation_plan',limit, offset]);
+		foundation_plan = await sql.query(`SELECT "favorites".fav_type , "foundation_plan".* 
+		FROM "favorites"  JOIN "foundation_plan" ON  "favorites".favorites_id = foundation_plan.id WHERE "favorites".user_id = $1 AND "favorites".fav_type = $2 ORDER BY "createdat" DESC
+	   LIMIT $3 OFFSET $4 ` , [req.body.user_id,'foundation_plan',limit, offset]);
 	relaxation_music = await sql.query(`SELECT "favorites".fav_type , "relaxation_music".* 
 	FROM "favorites"  JOIN "relaxation_music" ON  "favorites".favorites_id = relaxation_music.id WHERE "favorites".user_id = $1 AND "favorites".fav_type = $2 ORDER BY "createdat" DESC
    LIMIT $3 OFFSET $4 ` , [req.body.user_id,'relaxation_music',limit, offset]);
@@ -153,7 +153,7 @@ Favorites.viewAll = async (req, res) => {
 			count: data.rows[0].count,
 			meditation_plan: meditation_plan.rows,
 			yoga_plan: yoga_plan.rows,
-			// foundation_plan: foundation_plan.rows,
+			foundation_plan: foundation_plan.rows,
 			relaxation_music: relaxation_music.rows,
 
 

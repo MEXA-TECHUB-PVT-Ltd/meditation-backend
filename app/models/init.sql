@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS public.User (
         badge_id integer,
         image   text ,
         status text,
+        subscription_status text,
         createdAt timestamp,
         updatedAt timestamp ,
         PRIMARY KEY (id));
