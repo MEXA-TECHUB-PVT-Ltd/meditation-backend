@@ -230,70 +230,63 @@ Badge.update = async (req, res) => {
 }
 Badge.Streak = async (req, res) => {
 	const waterTrackingData = await sql.query(`select * from "check_badge" where user_id = $1`, [req.body.user_id]);
+
 	if (waterTrackingData.rowCount > 0) {
-		const { user_id, tracker_id, start_at, daily_intake } = req.body;
-		const check = await sql.query(`SELECT AGE('NOW()',updatedat) AS difference FROM check_badge where user_id = $1`, [req.body.user_id]);
-		if (check.rowCount > 0) {
-			console.log(check.rows[0].difference)
-			if (check.rows[0].difference.days) {
-				if (check.rows[0].difference.days <= 10 && check.rows[0].difference.months == 0 ) {
-					res.json({
-						message: "User has brass Badge Streak",
-						status: true,
-						result: check.rows[0].difference.days,
-					});
-				} else if (check.rows[0].difference.days > 10 && check.rows[0].difference.days >= 20  && check.rows[0].difference.months == 0) {
-					res.json({
-						message: "User has Silver Badge Streak",
-						status: true,
-						result: check.rows[0].difference.days,
-					});
-				} else if (check.rows[0].difference.days > 20 && check.rows[0].difference.days >= 30  && check.rows[0].difference.months == 0) {
-					res.json({
-						message: "User has platinum Badge Streak",
-						status: true,
-						result: check.rows[0].difference.days,
-					});
-				} else if (check.rows[0].difference.months == 1 && check.rows[0].difference.days <= 10) {
-					res.json({
-						message: "User has gold Badge Streak",
-						status: true,
-						months: check.rows[0].difference.months,
-						days: check.rows[0].difference.days,
-					});
-				} else if (check.rows[0].difference.months == 1 && check.rows[0].difference.days <= 20) {
-					res.json({
-						message: "User has diamond Badge Streak",
-						status: true,
-						months: check.rows[0].difference.months,
-						days: check.rows[0].difference.days,
-					});
-				} else if (check.rows[0].difference.months == 1 && check.rows[0].difference.days >= 20) {
-					res.json({
-						message: "User has ruby Badge Streak",
-						status: true,
-						result: check.rows[0].difference.days,
-					});
-				} else {
-					res.json({
-						message: "User has ruby Badge Streak",
-						status: true,
-						result: check.rows[0].difference.days,
-					});
+		const badgeData = await sql.query(`select * from "badge"`);
+		if (badgeData.rowCount > 0) {
+			const check = await sql.query(`SELECT AGE('NOW()',updatedat) AS difference FROM check_badge where user_id = $1`, [req.body.user_id]);
+			if (check.rowCount > 0) {
+				let days = check.rows[0].difference.days;
+				if (check.rows[0].difference.months !== undefined) {
+					days = days + (check.rows[0].difference.months * 30)
+				}
+				if (check.rows[0].difference.years !== undefined) {
+					days = days + (check.rows[0].difference.years * 365)
+				}
+				console.log(days)
+
+				const daysValue = parseInt(days);
+				let matchingObject = null;
+
+				const arrayOfObjects = badgeData.rows;
+				arrayOfObjects.sort((a, b) => {
+					const aConditionDays = parseInt(a.condition.split(' ')[0]);
+					const bConditionDays = parseInt(b.condition.split(' ')[0]);
+					return aConditionDays - bConditionDays;
+				});
+
+				for (let i = 0; i < arrayOfObjects.length - 1; i++) {
+					const currentObject = arrayOfObjects[i];
+					const nextObject = arrayOfObjects[i + 1];
+
+					const currentConditionDays = parseInt(currentObject.condition.split(' ')[0]);
+					const nextConditionDays = parseInt(nextObject.condition.split(' ')[0]);
+
+					if (daysValue > currentConditionDays && daysValue <= nextConditionDays) {
+						matchingObject = currentObject;
+						break;
+					}
 				}
 
+				if (!matchingObject && daysValue > parseInt(arrayOfObjects[arrayOfObjects.length - 1].condition.split(' ')[0])) {
+					matchingObject = arrayOfObjects[arrayOfObjects.length - 1];
+				}
 
-			}
-			else {
 				res.json({
-					message: "User has brass Badge Streak",
-					status: true,
+					message: "User Badge",
+					status: false,
+					result: matchingObject
+				});
+			} else {
+				res.json({
+					message: "User has no Badge until now",
+					status: false,
 				});
 			}
 		} else {
 			res.json({
-				message: "User has brass Badge Streak",
-				status: true,
+				message: "No Badge Found",
+				status: false,
 			});
 		}
 	} else {

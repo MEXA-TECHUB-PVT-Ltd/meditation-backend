@@ -13,6 +13,12 @@ module.exports = app => {
     router.post("/verifyOTP", Auth.verifyOTP)
     router.post("/newPassword", Auth.newPassword)
 
+
+    router.post("/all_plans_user", Auth.AllPlansUser)
+
+    router.put("/update_subscription", Auth.updateSubscription)
+    router.post("/all_subscribed_users", Auth.SubscribedUsers)
+
     // router.post("/google_sign_in", Auth.GooglesignIn);
     router.put("/update_profile",upload.single('image'), Auth.updateProfile);
     router.post("/total_users", Auth.AllUsers)
@@ -30,7 +36,10 @@ module.exports = app => {
     // router.get("/totay_added_users", Auth.todaysAddedUsers)
     
     router.post("/get_monthwise_users", Auth.getAllUsers_MonthWise_count)
+    router.post("/get_monthwise_meditation", Auth.getAllMeditation_MonthWise_count)
+    router.get("/get_years_meditation", Auth.getYearsMeditation)
 
+    
     // router.get("/subscribed_user_count", Auth.SubscribedUserCount)
     // router.get("/subscribed_users", Auth.SubscribedUsers)
 
