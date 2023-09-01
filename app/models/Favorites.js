@@ -167,9 +167,9 @@ Favorites.viewAll = async (req, res) => {
 }
 
 Favorites.unFav = async (req, res) => {
-	const data = await sql.query(`select * from "favorites" where id = $1 AND user_id = $2 `, [req.body.favorites_id, req.body.user_id ]);
+	const data = await sql.query(`select * from "favorites" where favorites_id = $1 AND user_id = $2 AND fav_type = $3`, [req.body.favorites_id, req.body.user_id, req.body.fav_type ]);
 	if (data.rows.length === 1) {
-		sql.query(`DELETE FROM "favorites" where id = $1 AND user_id = $2 `, [req.body.favorites_id, req.body.user_id], (err, result) => {
+		sql.query(`DELETE FROM "favorites" where favorites_id = $1 AND user_id = $2 AND  fav_type = $3 `, [req.body.favorites_id, req.body.user_id, req.body.fav_type ], (err, result) => {
 			if (err) {
 				res.json({
 					message: "Try Again",
