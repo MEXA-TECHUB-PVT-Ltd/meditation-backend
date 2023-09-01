@@ -330,11 +330,14 @@ Skill.update = async (req, res) => {
 			const olddiscription = SkillData.rows[0].discription;
 			const oldbenefit = SkillData.rows[0].benefit;
 			const oldstatus = SkillData.rows[0].status;
+				console.log(olddiscription);
+				console.log("discription");
 
 			let { skill_name, benefit, discription, status, id } = req.body;
 			if (status === undefined || status === '') {
 				status = oldstatus;
 			}
+			console.log(discription);
 
 			if (skill_name === undefined || skill_name === '') {
 				skill_name = oldskill_name;
