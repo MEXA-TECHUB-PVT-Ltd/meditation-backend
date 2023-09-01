@@ -54,7 +54,7 @@ User.create = async (req, res) => {
 						status: false,
 					});
 				} else if (checkResult.rows.length === 0) {
-					const { username, email, password, gender, level, goals, age, badge_id } = req.body;
+					const { username, email, password,subscription_status, gender, level, goals, age, badge_id } = req.body;
 					const salt = await bcrypt.genSalt(10);
 					let hashpassword = await bcrypt.hash(password, salt);
 					let photo = '';
