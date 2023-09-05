@@ -13,6 +13,7 @@ router.post("/view_all", Badge.viewAll);
 router.put("/update", Badge.update);
 router.delete("/delete/:id" , Badge.delete)
 router.post("/streak", Badge.Streak);
+// router.post("/StreakHistory", Badge.StreakHistory);
 
 app.use("/badge", router);
 };

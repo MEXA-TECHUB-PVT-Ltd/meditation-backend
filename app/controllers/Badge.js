@@ -18,7 +18,15 @@ exports.Streak = (req, res) => {
   }  
   Badge.Streak( req, res);
 };
-
+// exports.StreakHistory = (req, res) => {
+//   if (!req.body) {
+//     res.json({
+//       message: "Content can not be empty!",
+//       status: false,
+//      });
+//   }  
+//   Badge.StreakHistory( req, res);
+// };
 exports.viewSpecific = (req, res) => {
   if (!req.body) {
     res.json({

@@ -99,6 +99,81 @@ MeditationPlan.create = async (req, res) => {
 
 	});
 }
+
+
+MeditationPlan.viewAllPlanForUser = async (req, res) => {
+	const data = await sql.query(`SELECT COUNT(*) AS count FROM "meditation_plan"
+	WHERE age_group = $1 AND level = $2 AND $3 = ANY(goals_id);`
+		, [req.body.age_group, req.body.level, req.body.goals_id]);
+	let limit = '10';
+	let page = req.body.page;
+	let result;
+	if (!page || !limit) {
+		result = await sql.query(`SELECT  mp.*, (
+			SELECT json_agg( 
+			   json_build_object('id',g.id,'goal_name', g.name)
+			)
+			FROM goal g
+			WHERE g.id = ANY(mp.goals_id)
+		) AS goals, (
+			SELECT json_agg( 
+				json_build_object('id', s.id,'skill_name', s.skill_name,
+				'skill_icon', s.icon,'skill_description', s.discription,
+				'skill_benefit', s.benefit,'skill_createdat', s.createdat
+				)
+			)
+			FROM skill s
+			WHERE s.id = ANY(mp.skills_id)
+		) AS skills
+		FROM meditation_plan mp
+		WHERE "mp".age_group = $1
+		AND "mp".level = $2
+		AND $3 = ANY("mp".goals_id)
+		ORDER BY "createdat" DESC;`, [req.body.age_group, req.body.level, req.body.goals_id]);
+	}
+	if (page && limit) {
+		limit = parseInt(limit);
+		let offset = (parseInt(page) - 1) * limit
+		result = await sql.query(`SELECT  mp.*, (
+			SELECT json_agg( 
+			   json_build_object('id',g.id,'goal_name', g.name)
+			)
+			FROM goal g
+			WHERE g.id = ANY(mp.goals_id)
+		) AS goals, (
+			SELECT json_agg( 
+				json_build_object('id', s.id,'skill_name', s.skill_name,
+				'skill_icon', s.icon,'skill_description', s.discription,
+				'skill_benefit', s.benefit,'skill_createdat', s.createdat
+				)
+			)
+			FROM skill s
+			WHERE s.id = ANY(mp.skills_id)
+		) AS skills
+		FROM meditation_plan mp
+		WHERE "mp".age_group = $1
+		AND "mp".level = $2
+		AND $3 = ANY("mp".goals_id)
+		ORDER BY "createdat" DESC
+		LIMIT $4 OFFSET $5 ` , [req.body.age_group, req.body.level, req.body.goals_id, limit, offset]);
+	}
+	if (result.rows) {
+		res.json({
+			message: "All Plan Details",
+			status: true,
+			count: data.rows[0].count,
+			result: result.rows,
+		});
+	} else {
+		res.json({
+			message: "could not fetch",
+			status: false
+		})
+	}
+}
+
+
+
 MeditationPlan.viewAllPlan = async (req, res) => {
 	const data = await sql.query(`SELECT COUNT(*) AS count FROM "meditation_plan"`);
 	let limit = '10';
@@ -306,20 +381,23 @@ MeditationPlan.viewCompleted_user = async (req, res) => {
 }
 MeditationPlan.viewStarted_user = async (req, res) => {
 	const data = await sql.query(`SELECT COUNT(*) AS count FROM "manage_meditation_plan" WHERE  user_id = $1 
-	AND progress_status = 'started'`, [req.body.user_id]);
+	AND plan_status = 'started'`, [req.body.user_id]);
 	let limit = req.body.limit;
 	let page = req.body.page;
 	let result;
 	if (!page || !limit) {
-		result = await sql.query(`SELECT  mp.*, (
+		result = await sql.query(`SELECT  mp.*, 
+		(
 			SELECT json_agg( 
-			   json_build_object('id',g.id,'goal_name', g.name
-			   )
-				   )
-				   FROM goal g
-					WHERE g.id = ANY(mp.goals_id)
-					 ) AS goals 
-	
+				json_build_object('id', s.id,'skill_name', s.skill_name,
+				'skill_icon', s.icon,'skill_description', s.discription,
+				'skill_benefit', s.benefit,'skill_createdat', s.createdat
+				)
+					)
+					FROM skill s
+					 WHERE s.id = ANY(mp.skills_id_completed) 
+					  ) AS completed_skills
+
 					 , (
 					   SELECT json_agg( 
 						  json_build_object('id', s.id,'skill_name', s.skill_name,
@@ -328,24 +406,27 @@ MeditationPlan.viewStarted_user = async (req, res) => {
 						  )
 							  )
 							  FROM skill s
-							   WHERE s.id = ANY(mp.skills_id) 
-								) AS skills
+							   WHERE s.id = mp.skill_id_on_going
+								) AS on_going_skills
 					   FROM manage_meditation_plan mp 
-					   where "mp".user_id = $1 AND progress_status = 'started' 
+					   where "mp".user_id = $1 AND plan_status = 'started' 
 		 ORDER BY "createdat" DESC`, [req.body.user_id]);
 	}
 	if (page && limit) {
 		limit = parseInt(limit);
 		let offset = (parseInt(page) - 1) * limit
-		result = await sql.query(`SELECT  mp.*, (
+		result = await sql.query(`SELECT  mp.*,
+		 (
 			SELECT json_agg( 
-			   json_build_object('id',g.id,'goal_name', g.name
-			   )
-				   )
-				   FROM goal g
-					WHERE g.id = ANY(mp.goals_id)
-					 ) AS goals 
-	
+				json_build_object('id', s.id,'skill_name', s.skill_name,
+				'skill_icon', s.icon,'skill_description', s.discription,
+				'skill_benefit', s.benefit,'skill_createdat', s.createdat
+				)
+					)
+					FROM skill s
+					 WHERE s.id = ANY(mp.skills_id_completed) 
+					  ) AS completed_skills
+
 					 , (
 					   SELECT json_agg( 
 						  json_build_object('id', s.id,'skill_name', s.skill_name,
@@ -354,10 +435,10 @@ MeditationPlan.viewStarted_user = async (req, res) => {
 						  )
 							  )
 							  FROM skill s
-							   WHERE s.id = ANY(mp.skills_id) 
-								) AS skills
+							   WHERE s.id = mp.skill_id_on_going
+								) AS on_going_skills
 					   FROM manage_meditation_plan mp 
-					   where "mp".user_id = $1 AND progress_status = 'started' ORDER BY "createdat" DESC
+					   where "mp".user_id = $1 AND plan_status = 'started'  ORDER BY "createdat" DESC
 		LIMIT $2 OFFSET $3 ` , [req.body.user_id, limit, offset]);
 	}
 	if (result.rows) {
@@ -374,6 +455,83 @@ MeditationPlan.viewStarted_user = async (req, res) => {
 		})
 	}
 }
+MeditationPlan.viewStarted_user_Specific = async (req, res) => {
+	const data = await sql.query(`SELECT COUNT(*) AS count FROM "manage_meditation_plan" WHERE  user_id = $1 
+	AND plan_status = 'started' AND plan_id = $2`, [req.body.user_id, req.body.plan_id]);
+	let limit = req.body.limit;
+	let page = req.body.page;
+	let result;
+	if (!page || !limit) {
+		result = await sql.query(`SELECT  mp.*, 
+		(
+			SELECT json_agg( 
+				json_build_object('id', s.id,'skill_name', s.skill_name,
+				'skill_icon', s.icon,'skill_description', s.discription,
+				'skill_benefit', s.benefit,'skill_createdat', s.createdat
+				)
+					)
+					FROM skill s
+					 WHERE s.id = ANY(mp.skills_id_completed) 
+					  ) AS completed_skills
+
+					 , (
+					   SELECT json_agg( 
+						  json_build_object('id', s.id,'skill_name', s.skill_name,
+						  'skill_icon', s.icon,'skill_description', s.discription,
+						  'skill_benefit', s.benefit,'skill_createdat', s.createdat
+						  )
+							  )
+							  FROM skill s
+							   WHERE s.id = mp.skill_id_on_going
+								) AS on_going_skills
+					   FROM manage_meditation_plan mp 
+					   where "mp".user_id = $1 AND plan_status = 'started'   AND plan_id = $2 
+		 ORDER BY "createdat" DESC`, [req.body.user_id, req.body.plan_id]);
+	}
+	if (page && limit) {
+		limit = parseInt(limit);
+		let offset = (parseInt(page) - 1) * limit
+		result = await sql.query(`SELECT  mp.*,
+		 (
+			SELECT json_agg( 
+				json_build_object('id', s.id,'skill_name', s.skill_name,
+				'skill_icon', s.icon,'skill_description', s.discription,
+				'skill_benefit', s.benefit,'skill_createdat', s.createdat
+				)
+					)
+					FROM skill s
+					 WHERE s.id = ANY(mp.skills_id_completed) 
+					  ) AS completed_skills
+
+					 , (
+					   SELECT json_agg( 
+						  json_build_object('id', s.id,'skill_name', s.skill_name,
+						  'skill_icon', s.icon,'skill_description', s.discription,
+						  'skill_benefit', s.benefit,'skill_createdat', s.createdat
+						  )
+							  )
+							  FROM skill s
+							   WHERE s.id = mp.skill_id_on_going
+								) AS on_going_skills
+					   FROM manage_meditation_plan mp 
+					   where "mp".user_id = $1 AND plan_status = 'started'  AND plan_id = $2  ORDER BY "createdat" DESC
+		LIMIT $3 OFFSET $4 ` , [req.body.user_id, req.body.plan_id, limit, offset]);
+	}
+	if (result.rows) {
+		res.json({
+			message: "User's Started Plan Details",
+			status: true,
+			count: data.rows[0].count,
+			result: result.rows,
+		});
+	} else {
+		res.json({
+			message: "could not fetch",
+			status: false
+		})
+	}
+}
+
 MeditationPlan.addAudioFile = async (req, res) => {
 	if (req.body.id === '') {
 		res.json({

@@ -20,6 +20,8 @@ router.post("/view_all", MeditationPlan.viewAll);
 router.put("/update",upload.array('audio_files'), MeditationPlan.update);
 router.delete("/delete/:id" , MeditationPlan.delete)
 router.post("/streak", MeditationPlan.Streak);
+router.post("/viewAllPlanForUser", MeditationPlan.viewAllPlanForUser);
+router.post("/viewStarted_user_specific", MeditationPlan.viewStarted_user_Specific);
 router.post("/change_plan_status", MeditationPlan.changePlanStatus);
 router.put("/start", MeditationPlan.start);
 router.delete("/quit_plan", MeditationPlan.quitPlan);

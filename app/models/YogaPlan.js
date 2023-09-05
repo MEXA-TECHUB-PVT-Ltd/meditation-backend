@@ -95,6 +95,111 @@ YogaPlan.create = async (req, res) => {
 
 	});
 }
+
+
+YogaPlan.viewAllPlanForUser = async (req, res) => {
+	const data = await sql.query(`SELECT COUNT(*) AS count FROM "yoga_plan" WHERE age_group = $1 AND level = $2 AND $3 = ANY(goals_id);`
+		, [req.body.age_group, req.body.level, req.body.goals_id]);
+	let limit = req.body.limit;
+	let page = req.body.page;
+	let result;
+	if (!page || !limit) {
+		result = await sql.query(`SELECT  mp.*, (
+			SELECT json_agg( 
+			   json_build_object('id',g.id,'goal_name', g.name
+			   )
+				   )
+				   FROM goal g
+					WHERE g.id = ANY(mp.goals_id)
+					 ) AS goals 
+
+					 , (
+					   SELECT json_agg( 
+						  json_build_object('id', s.id,'skill_name', s.skill_name,
+						  'skill_icon', s.icon,'skill_description', s.discription,
+						  'skill_benefit', s.benefit,'skill_createdat', s.createdat
+						  )
+							  )
+							  FROM skill s
+							   WHERE s.id = ANY(mp.skills_id)
+								) AS skills
+
+						, (
+							SELECT json_agg( 
+								json_build_object('id', s.id,'Exercise_name', s.name, 'Exercise_duration', s.duration,
+								'Exercise_Animation', s.animations,'Exercise_description', s.description,
+								'Exercise_Audio_file', s.audio_file,'Exercise_createdat', s.createdat
+								)
+									)
+									FROM exercise s
+									WHERE s.id = ANY(mp.exercises_id)
+										) AS exercise
+					   FROM yoga_plan mp
+					   WHERE "mp".age_group = $1
+					   AND "mp".level = $2
+					   AND $3 = ANY("mp".goals_id)
+					   ORDER BY "createdat" DESC;`, [req.body.age_group, req.body.level, req.body.goals_id]);
+	}
+	if (page && limit) {
+		limit = parseInt(limit);
+		let offset = (parseInt(page) - 1) * limit
+		result = await sql.query(`SELECT  mp.*, (
+			SELECT json_agg( 
+			   json_build_object('id',g.id,'goal_name', g.name
+			   )
+				   )
+				   FROM goal g
+					WHERE g.id = ANY(mp.goals_id)
+					 ) AS goals 
+
+					 , (
+					   SELECT json_agg( 
+						  json_build_object('id', s.id,'skill_name', s.skill_name,
+						  'skill_icon', s.icon,'skill_description', s.discription,
+						  'skill_benefit', s.benefit,'skill_createdat', s.createdat
+						  )
+							  )
+							  FROM skill s
+							   WHERE s.id = ANY(mp.skills_id)
+								) AS skills
+
+						, (
+							SELECT json_agg( 
+								json_build_object('id', s.id,'Exercise_name', s.name,
+								'Exercise_Animation', s.animations,'Exercise_description', s.description,
+								'Exercise_Audio_file', s.audio_file,'Exercise_createdat', s.createdat
+								)
+									)
+									FROM exercise s
+									WHERE s.id = ANY(mp.exercises_id)
+										) AS exercise
+			 
+
+					   FROM yoga_plan mp WHERE "mp".age_group = $1
+					   AND "mp".level = $2
+					   AND $3 = ANY("mp".goals_id)
+					   ORDER BY "createdat" DESC
+					   LIMIT $4 OFFSET $5 ` , [req.body.age_group, req.body.level, req.body.goals_id, limit, offset]);
+
+	}
+	if (result.rows) {
+		res.json({
+			message: "All Plan Details",
+			status: true,
+			count: data.rows[0].count,
+			result: result.rows,
+		});
+	} else {
+		res.json({
+			message: "could not fetch",
+			status: false
+		})
+	}
+}
+
+
+
+
 YogaPlan.viewAllPlan = async (req, res) => {
 	const data = await sql.query(`SELECT COUNT(*) AS count FROM "yoga_plan"`);
 	let limit = req.body.limit;
@@ -976,29 +1081,29 @@ YogaPlan.start = async (req, res) => {
 
 
 
-											const CheckStreak = await sql.query(`select * from "check_streak" where user_id = $1`, [user_id]);
-											if (CheckStreak.rowCount > 0) {
-												let oldstreak_start_date = CheckStreak.rows[0].streak_start_date;
-												const check = await sql.query(`SELECT AGE(start_at, 'NOW()') AS difference FROM check_streak where user_id = $1`, [req.body.user_id]);
-												console.log(check.rows);
-												if (check.rowCount > 0) {
-													if (check.rows[0].difference.days) {
-														if (check.rows[0].difference.days > 1) {
-															oldstreak_start_date = started_at;
-														}
+										const CheckStreak = await sql.query(`select * from "check_streak" where user_id = $1`, [user_id]);
+										if (CheckStreak.rowCount > 0) {
+											let oldstreak_start_date = CheckStreak.rows[0].streak_start_date;
+											const check = await sql.query(`SELECT AGE(start_at, 'NOW()') AS difference FROM check_streak where user_id = $1`, [req.body.user_id]);
+											console.log(check.rows);
+											if (check.rowCount > 0) {
+												if (check.rows[0].difference.days) {
+													if (check.rows[0].difference.days > 1) {
+														oldstreak_start_date = started_at;
 													}
 												}
-												if (oldstreak_start_date === null) {
-													oldstreak_start_date = started_at
-												}
-												const query = `UPDATE "check_streak" SET  start_at = $1 , streak_start_date = $2`;
-												const foundResult = await sql.query(query, [started_at, oldstreak_start_date]);
-											} else {
-												const query = `INSERT INTO "check_streak" (id, user_id ,start_at, streak_start_date  ,createdat ,updatedat )
-													VALUES (DEFAULT, $1, $2,$3, 'NOW()','NOW()' ) `;
-												const foundResult = await sql.query(query, [user_id, started_at, started_at]);
 											}
-	
+											if (oldstreak_start_date === null) {
+												oldstreak_start_date = started_at
+											}
+											const query = `UPDATE "check_streak" SET  start_at = $1 , streak_start_date = $2`;
+											const foundResult = await sql.query(query, [started_at, oldstreak_start_date]);
+										} else {
+											const query = `INSERT INTO "check_streak" (id, user_id ,start_at, streak_start_date  ,createdat ,updatedat )
+													VALUES (DEFAULT, $1, $2,$3, 'NOW()','NOW()' ) `;
+											const foundResult = await sql.query(query, [user_id, started_at, started_at]);
+										}
+
 
 										const managePlan = await sql.query(`select * from "manage_yoga_plan" 
 											where plan_id = $1 AND user_id = $2`, [req.body.plan_id, req.body.user_id]);
@@ -1015,12 +1120,12 @@ YogaPlan.start = async (req, res) => {
 													action_table, start_date, status ,createdAt ,updatedAt )
 												VALUES (DEFAULT, $1  ,  $2, $3,  $4 ,$5,$6, 'NOW()', 'NOW()') RETURNING * `
 													, [req.body.user_id, req.body.plan_id, 'Re-Start Plan', 'yoga_plan',
-													'NOW()',  'started'])
+														'NOW()', 'started'])
 
 												res.json({
 													message: "Yoga Plan Re-Started (Progress 0%) Successfully!",
 													status: true,
-													result:updatedPlan.rows
+													result: updatedPlan.rows
 												});
 											} else {
 												res.json({
@@ -1050,8 +1155,8 @@ YogaPlan.start = async (req, res) => {
 														action_table, start_date, status ,createdAt ,updatedAt )
 													VALUES (DEFAULT, $1  ,  $2, $3,  $4 ,$5,$6, 'NOW()', 'NOW()') RETURNING * `
 														, [req.body.user_id, req.body.plan_id, 'Start Plan', 'yoga_plan',
-														'NOW()',  'started'])
-	
+															'NOW()', 'started'])
+
 													res.json({
 														message: "Yoga Plan Started Successfully!",
 														status: true,
@@ -1152,12 +1257,12 @@ YogaPlan.updateStartedPlan = async (req, res) => {
 							} else {
 								if (result.rowCount === 1) {
 									const updatedPlan = await sql.query(`select * from "manage_yoga_plan" where plan_id = $1 AND user_id = $2`, [req.body.plan_id, req.body.user_id]);
-									if(progress_status === 'completed'){
+									if (progress_status === 'completed') {
 										const History = sql.query(`UPDATE history SET end_date = $1 , updatedAt = $2
 										, status = $3
 										WHERE  user_id = $4 AND action_id = $5 AND action_table = $6`
-											, ['NOW()', 'NOW()', 'completed' ,req.body.user_id, req.body.plan_id, 'yoga_plan'])	
-									}			
+											, ['NOW()', 'NOW()', 'completed', req.body.user_id, req.body.plan_id, 'yoga_plan'])
+									}
 									res.json({
 										message: "Yoga Plan Updated Successfully!",
 										status: true,
@@ -1187,18 +1292,18 @@ YogaPlan.updateStartedPlan = async (req, res) => {
 }
 YogaPlan.viewProgress_plan_skill_user = async (req, res) => {
 	const data = await sql.query(`select * from "manage_yoga_plan" where 
-	plan_id = $1 AND user_id = $2`, [req.body.plan_id , req.body.user_id]);
+	plan_id = $1 AND user_id = $2`, [req.body.plan_id, req.body.user_id]);
 	if (data.rowCount > 0) {
 		let status = 'not started';
 
 
-		for(let i = 0  ; i < data.rows[0].skills_id_completed.length ; i++) {
-			if(data.rows[0].skills_id_completed[i] == req.body.skill_id){
+		for (let i = 0; i < data.rows[0].skills_id_completed.length; i++) {
+			if (data.rows[0].skills_id_completed[i] == req.body.skill_id) {
 				status = 'Completed';
 			}
 		}
 
-		if(data.rows[0].skill_id_on_going == req.body.skill_id){
+		if (data.rows[0].skill_id_on_going == req.body.skill_id) {
 			status = '(start) On Going';
 		}
 		res.json({
@@ -1206,7 +1311,7 @@ YogaPlan.viewProgress_plan_skill_user = async (req, res) => {
 			status: true,
 			result: status,
 		});
-	}else{
+	} else {
 		res.json({
 			message: "Plan with that user isn't available",
 			status: false,
@@ -1217,7 +1322,7 @@ YogaPlan.viewProgress_plan_skill_user = async (req, res) => {
 }
 YogaPlan.view_completed_skills_plan = async (req, res) => {
 	const data = await sql.query(`select * from "manage_yoga_plan" where 
-	plan_id = $1 AND user_id = $2`, [req.body.plan_id , req.body.user_id]);
+	plan_id = $1 AND user_id = $2`, [req.body.plan_id, req.body.user_id]);
 	if (data.rowCount > 0) {
 		const skills = await sql.query(`SELECT  
 					 (
@@ -1231,22 +1336,22 @@ YogaPlan.view_completed_skills_plan = async (req, res) => {
 							   WHERE s.id = ANY(mp.skills_id_completed)
 								) AS skills
 					   FROM manage_yoga_plan mp WHERE
-					   plan_id = $1 AND user_id = $2`, [req.body.plan_id , req.body.user_id]);
-		if (data.rowCount > 0) {		
+					   plan_id = $1 AND user_id = $2`, [req.body.plan_id, req.body.user_id]);
+		if (data.rowCount > 0) {
 
 			res.json({
 				message: "All Completed Skill in that Plan",
 				status: true,
-				result:skills.rows
+				result: skills.rows
 			});
-			
-		}else	{
-		res.json({
-			message: "Try Again",
-			status: false,
-		});
-	}
-	}else{
+
+		} else {
+			res.json({
+				message: "Try Again",
+				status: false,
+			});
+		}
+	} else {
 		res.json({
 			message: "Plan with that user isn't available",
 			status: false,
@@ -1257,7 +1362,7 @@ YogaPlan.view_completed_skills_plan = async (req, res) => {
 }
 YogaPlan.view_completed_skills_User = async (req, res) => {
 	const data = await sql.query(`select * from "manage_yoga_plan" where 
-	user_id = $1`, [ req.body.user_id]);
+	user_id = $1`, [req.body.user_id]);
 	if (data.rowCount > 0) {
 		const skills = await sql.query(`SELECT  
 					 (
@@ -1271,22 +1376,22 @@ YogaPlan.view_completed_skills_User = async (req, res) => {
 							   WHERE s.id = ANY(mp.skills_id_completed)
 								) AS skills
 					   FROM manage_yoga_plan mp WHERE
-					    user_id = $1`, [ req.body.user_id]);
-		if (data.rowCount > 0) {		
+					    user_id = $1`, [req.body.user_id]);
+		if (data.rowCount > 0) {
 
 			res.json({
 				message: "All Completed Skill by a User",
 				status: true,
-				result:skills.rows
+				result: skills.rows
 			});
-			
-		}else	{
-		res.json({
-			message: "Try Again",
-			status: false,
-		});
-	}
-	}else{
+
+		} else {
+			res.json({
+				message: "Try Again",
+				status: false,
+			});
+		}
+	} else {
 		res.json({
 			message: "Plan with that user isn't available",
 			status: false,
@@ -1297,7 +1402,7 @@ YogaPlan.view_completed_skills_User = async (req, res) => {
 }
 YogaPlan.view_completed_Exercises_User = async (req, res) => {
 	const data = await sql.query(`select * from "manage_yoga_plan" where 
-	user_id = $1`, [ req.body.user_id]);
+	user_id = $1`, [req.body.user_id]);
 	if (data.rowCount > 0) {
 		const skills = await sql.query(`SELECT  
 					 (
@@ -1311,22 +1416,22 @@ YogaPlan.view_completed_Exercises_User = async (req, res) => {
 							   WHERE s.id = ANY(mp.exercises_id)
 								) AS exercise
 					   FROM manage_yoga_plan mp WHERE
-					    user_id = $1`, [ req.body.user_id]);
-		if (data.rowCount > 0) {		
+					    user_id = $1`, [req.body.user_id]);
+		if (data.rowCount > 0) {
 
 			res.json({
 				message: "All Completed Exercises by a User",
 				status: true,
-				result:skills.rows
+				result: skills.rows
 			});
-			
-		}else	{
-		res.json({
-			message: "Try Again",
-			status: false,
-		});
-	}
-	}else{
+
+		} else {
+			res.json({
+				message: "Try Again",
+				status: false,
+			});
+		}
+	} else {
 		res.json({
 			message: "Plan with that user isn't available",
 			status: false,
@@ -1366,7 +1471,7 @@ YogaPlan.quitPlan = async (req, res) => {
 
 YogaPlan.view_All_Exercises_User = async (req, res) => {
 	const data = await sql.query(`select * from "manage_yoga_plan" where 
-	user_id = $1`, [ req.body.user_id]);
+	user_id = $1`, [req.body.user_id]);
 	if (data.rowCount > 0) {
 		const skills = await sql.query(`SELECT  
 					 (
@@ -1381,22 +1486,22 @@ YogaPlan.view_All_Exercises_User = async (req, res) => {
 								) AS exercise
 					   FROM manage_yoga_plan  mp JOIN  yoga_plan MMP 
 					   ON mp.plan_id  = MMP.id WHERE
-					   mp.user_id = $1 ORDER BY MMP.createdat DESC`, [ req.body.user_id]);
-		if (data.rowCount > 0) {		
+					   mp.user_id = $1 ORDER BY MMP.createdat DESC`, [req.body.user_id]);
+		if (data.rowCount > 0) {
 
 			res.json({
 				message: "All Exercises by a User",
 				status: true,
-				result:skills.rows
+				result: skills.rows
 			});
-			
-		}else	{
-		res.json({
-			message: "Try Again",
-			status: false,
-		});
-	}
-	}else{
+
+		} else {
+			res.json({
+				message: "Try Again",
+				status: false,
+			});
+		}
+	} else {
 		res.json({
 			message: "Plan with that user isn't available",
 			status: false,

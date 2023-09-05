@@ -9,6 +9,15 @@ exports.create = (req, res) => {
   }  
   FoundationPlan.create( req, res);
 };
+exports.viewAllPlanForUser = (req, res) => {
+  if (!req.body) {
+    res.json({
+      message: "Content can not be empty!",
+      status: false,
+     });
+  }  
+  FoundationPlan.viewAllPlanForUser( req, res);
+};
 
 exports.viewHistory_Plan_user = (req, res) => {
   if (!req.body) {
