@@ -273,6 +273,265 @@ FoundationPlan.AddPlan = async (req, res) => {
 }
 
 
+FoundationPlan.viewAllPlanForUser = async (req, res) => {
+	const data = await sql.query(`SELECT COUNT(*) AS count FROM "foundation_plan"
+	WHERE age_group = $1 AND level = $2 AND  goals_id = $3`
+		, [req.body.age_group, req.body.level, req.body.goals_id]);
+	let limit = '10';
+	let page = req.body.page;
+	let plan_type = req.body.plan_type;
+	let yoga_plan;
+	let foundation_plan;
+
+	if (!page || !limit) {
+		foundation_plan = await sql.query(`WITH distinct_meditation_plans AS (
+			SELECT DISTINCT ON (id) id, plan_name,
+			 description, icon, duration, age_group, level, animations, 
+			 audio_files, started_at, payment_status, createdat, skills_id, 
+			 goals_id
+			FROM meditation_plan
+		)
+		SELECT
+			fp.id AS foundation_plan_id,
+			fp.plan_name AS foundation_plan_name,
+			fp.days,
+			fp.icon,
+			fp.goals_id AS goal,
+			fp.age_group ,
+			fp.level,
+			fp.plan_type,
+			fp.plan_id,
+			fp.description,
+			fp.createdat,
+			(
+				SELECT json_agg(
+					json_build_object(
+						'plan_name', mp.plan_name,
+						'description', mp.description,
+						'icon', mp.icon,
+						'duration', mp.duration,
+						'age_group', mp.age_group,
+						'level', mp.level,
+						'animations', mp.animations,
+						'audio_files', mp.audio_files,
+						'started_at', mp.started_at,
+						'payment_status', mp.payment_status,
+						'createdAt', mp.createdat,
+						'skills', (
+							SELECT json_agg(json_build_object('skills', sk.*))
+							FROM skill sk
+							WHERE sk.id = ANY(mp.skills_id)
+						),
+						'goals', (
+							SELECT json_agg(json_build_object('goals', g.*))
+							FROM goal g
+							WHERE g.id = ANY(mp.goals_id)
+						)
+					)
+				)
+				FROM distinct_meditation_plans mp
+				WHERE mp.id = ANY(fp.plan_id)
+				
+			) AS plan
+		FROM
+			foundation_plan fp
+		WHERE
+			fp.plan_type = $1  AND 
+			"fp".age_group = $2
+					   AND "fp".level = $3
+					   AND "fp".goals_id = $4
+					   ORDER BY "createdat" DESC;`, ['meditation_plan', req.body.age_group, req.body.level, req.body.goals_id]);
+
+		yoga_plan = await sql.query(`SELECT
+		fp.id AS foundation_plan_id,
+		fp.plan_name AS foundation_plan_name,
+		fp.days,
+		fp.icon,
+		fp.goals_id AS goal,
+		fp.age_group ,
+		fp.level,
+		fp.plan_id,
+		fp.plan_type,
+		fp.description,
+		fp.createdat,
+		(
+			SELECT json_agg(
+				json_build_object(
+					'plan_name', yp.plan_name,
+					'description', yp.description,
+					'icon', yp.icon,
+					'duration', yp.duration,
+					'age_group', yp.age_group,
+					'level', yp.level,
+					'started_at', yp.started_at,
+					'payment_status', yp.payment_status,
+					'createdAt', yp.createdat,
+					'skills', (
+						SELECT json_agg(json_build_object('skills', sk.*))
+						FROM skill sk
+						WHERE sk.id = ANY(yp.skills_id)
+					),
+					'goals', (
+						SELECT json_agg(json_build_object('goals', g.*))
+						FROM goal g
+						WHERE g.id = ANY(yp.goals_id)
+					),
+					'exercises', (
+						SELECT json_agg(json_build_object('exercise', ex.*))
+						FROM exercise ex
+						WHERE ex.id = ANY(yp.exercises_id)
+					)
+				)
+			)
+			FROM (
+				SELECT DISTINCT ON (yp.id) yp.id, yp.plan_name, yp.description, yp.icon, yp.duration, yp.age_group, yp.level, yp.started_at, yp.payment_status, yp.createdat, yp.skills_id, yp.goals_id, yp.exercises_id
+				FROM yoga_plan yp
+				WHERE yp.id = ANY(fp.plan_id)
+			) yp
+		) AS plan
+	FROM
+		foundation_plan fp
+	WHERE
+	fp.plan_type = $1  AND 
+	"fp".age_group = $2
+			   AND "fp".level = $3
+			   AND "fp".goals_id = $4
+			   ORDER BY "createdat" DESC;`, ['yoga_plan', req.body.age_group, req.body.level, req.body.goals_id]);
+}
+	if (page && limit) {
+		limit = parseInt(limit);
+		let offset = (parseInt(page) - 1) * limit
+		foundation_plan = await sql.query(`WITH distinct_meditation_plans AS (
+			SELECT DISTINCT ON (id) id, plan_name,
+			 description, icon, duration, age_group, level, animations, 
+			 audio_files, started_at, payment_status, createdat, skills_id, 
+			 goals_id
+			FROM meditation_plan
+		)
+		SELECT
+			fp.id AS foundation_plan_id,
+			fp.plan_name AS foundation_plan_name,
+			fp.days,
+			fp.icon,
+			fp.goals_id AS goal,
+			fp.age_group ,
+			fp.level,
+			fp.plan_type,
+			fp.plan_id,
+			fp.description,
+			fp.createdat,
+			(
+				SELECT json_agg(
+					json_build_object(
+						'plan_name', mp.plan_name,
+						'description', mp.description,
+						'icon', mp.icon,
+						'duration', mp.duration,
+						'age_group', mp.age_group,
+						'level', mp.level,
+						'animations', mp.animations,
+						'audio_files', mp.audio_files,
+						'started_at', mp.started_at,
+						'payment_status', mp.payment_status,
+						'createdAt', mp.createdat,
+						'skills', (
+							SELECT json_agg(json_build_object('skills', sk.*))
+							FROM skill sk
+							WHERE sk.id = ANY(mp.skills_id)
+						),
+						'goals', (
+							SELECT json_agg(json_build_object('goals', g.*))
+							FROM goal g
+							WHERE g.id = ANY(mp.goals_id)
+						)
+					)
+				)
+				FROM distinct_meditation_plans mp
+				WHERE mp.id = ANY(fp.plan_id)
+			) AS plan
+		FROM
+			foundation_plan fp
+		WHERE
+			fp.plan_type = $1 AND
+			"fp".age_group = $2
+			AND "fp".level = $3
+			AND  "fp".goals_id = $4 
+			ORDER BY "createdat" DESC
+			LIMIT $5 OFFSET $6 `, ['meditation_plan', req.body.age_group, req.body.level, req.body.goals_id, limit, offset]);
+
+		yoga_plan = await sql.query(`SELECT
+		fp.id AS foundation_plan_id,
+		fp.plan_name AS foundation_plan_name,
+		fp.days,
+		fp.icon,
+		fp.goals_id AS goal,
+		fp.age_group ,
+		fp.level,
+		fp.plan_id,
+		fp.plan_type,
+		fp.description,
+		fp.createdat,
+		(
+			SELECT json_agg(
+				json_build_object(
+					'plan_name', yp.plan_name,
+					'description', yp.description,
+					'icon', yp.icon,
+					'duration', yp.duration,
+					'age_group', yp.age_group,
+					'level', yp.level,
+					'started_at', yp.started_at,
+					'payment_status', yp.payment_status,
+					'createdAt', yp.createdat,
+					'skills', (
+						SELECT json_agg(json_build_object('skills', sk.*))
+						FROM skill sk
+						WHERE sk.id = ANY(yp.skills_id)
+					),
+					'goals', (
+						SELECT json_agg(json_build_object('goals', g.*))
+						FROM goal g
+						WHERE g.id = ANY(yp.goals_id)
+					),
+					'exercises', (
+						SELECT json_agg(json_build_object('exercise', ex.*))
+						FROM exercise ex
+						WHERE ex.id = ANY(yp.exercises_id)
+					)
+				)
+			)
+			FROM (
+				SELECT DISTINCT ON (yp.id) yp.id, yp.plan_name, yp.description, yp.icon, yp.duration, yp.age_group, yp.level, yp.started_at, yp.payment_status, yp.createdat, yp.skills_id, yp.goals_id, yp.exercises_id
+				FROM yoga_plan yp
+				WHERE yp.id = ANY(fp.plan_id)
+			) yp
+		) AS plan
+	FROM
+		foundation_plan fp
+	WHERE
+			fp.plan_type = $1 AND
+			"fp".age_group = $2
+			AND "fp".level = $3
+			AND "fp".goals_id =$4 
+			ORDER BY "createdat" DESC
+			LIMIT $5 OFFSET $6 `, ['yoga_plan', req.body.age_group, req.body.level, req.body.goals_id, limit, offset]);
+	}
+	if (yoga_plan.rows) {
+		res.json({
+			message: "All Plan Details",
+			status: true,
+			Total_Foundation_plans: data.rows[0].count,
+			Foundation_plans_Yoga: yoga_plan.rows,
+			Foundation_plans_Meditations: foundation_plan.rows
+		});
+	} else {
+		res.json({
+			message: "could not fetch",
+			status: false
+		})
+	}
+}
+
 
 
 FoundationPlan.viewAllPlan = async (req, res) => {

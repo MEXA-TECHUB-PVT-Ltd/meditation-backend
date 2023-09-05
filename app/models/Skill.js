@@ -18,7 +18,7 @@ Skill.create = async (req, res) => {
 		skill_name text,
         icon text ,
         discription text,
-		benefit text,
+		benefit text[],
 		status text,
         createdAt timestamp,
         updatedAt timestamp ,
@@ -65,13 +65,77 @@ Skill.create = async (req, res) => {
 }
 
 
+
+Skill.viewProgressAllDSpecific = async (req, res) => {
+
+	const skills = await sql.query(`SELECT * FROM "skill" where id = $1`, [req.body.skill_id]);
+	if (skills.rowCount > 0) {
+
+		let skillResults = [];
+
+		let user_id = req.body.user_id;
+
+		const skill_id = req.body.skill_id;
+		const [YogaPlanTotal, MeditationPlanTotal, FoundationPlanTotalMeditation, FoundationPlanTotalYoga, YogaPlanCompleted, MeditationPlanCompleted, FoundationPlanCompleted] = await Promise.all([
+			sql.query(`SELECT COUNT(*) AS YogaTotal  FROM "yoga_plan" WHERE $1 = ANY(skills_id) `, [skill_id]),
+			sql.query(`SELECT COUNT(*) AS MeditationTotal  FROM "meditation_plan"  WHERE $1 = ANY(skills_id) `, [skill_id]),
+			sql.query(`SELECT COUNT(*) AS FoundationTotal1 FROM "foundation_plan" 
+				JOIN "meditation_plan" ON "meditation_plan"."id" = ANY("foundation_plan"."plan_id")
+				WHERE $1 = ANY(skills_id)  
+				AND "foundation_plan".plan_type = $2 `, [skill_id, 'meditation_plan']),
+			sql.query(`SELECT COUNT(*) AS FoundationTotal2 FROM "foundation_plan" 
+				JOIN "yoga_plan" ON  "yoga_plan"."id" = ANY("foundation_plan"."plan_id")
+				WHERE $1 = ANY(skills_id) 
+				AND "foundation_plan".plan_type = $2 `, [skill_id, 'yoga_plan']),
+			sql.query(`SELECT COUNT(*) AS YogaCompleted FROM  "manage_yoga_plan" WHERE $1 = ANY(skills_id_completed) 
+				AND "manage_yoga_plan".user_id = $2`, [skill_id, user_id]),
+			sql.query(`SELECT COUNT(*) AS MeditationCompleted FROM "manage_meditation_plan" WHERE $1 = ANY(skills_id_completed) 
+				AND "manage_meditation_plan".user_id = $2`, [skill_id, user_id]),
+			sql.query(`SELECT COUNT(*) AS FoundationCompleted FROM "manage_foundation_plan" WHERE $1 = ANY(skills_id_completed) 
+				AND "manage_foundation_plan".user_id = $2`, [skill_id, user_id])
+		]);
+
+		const completed = (
+			parseInt(FoundationPlanCompleted.rows[0].foundationcompleted)
+			+ parseInt(YogaPlanCompleted.rows[0].yogacompleted)
+			+ parseInt(MeditationPlanCompleted.rows[0].meditationcompleted)
+		);
+
+		const total = (
+			parseInt(FoundationPlanTotalYoga.rows[0].foundationtotal2)
+			+ parseInt(FoundationPlanTotalMeditation.rows[0].foundationtotal1)
+			+ parseInt(YogaPlanTotal.rows[0].yogatotal)
+			+ parseInt(MeditationPlanTotal.rows[0].meditationtotal)
+		);
+
+		skillResults.push({
+			skill_id: skill_id,
+			total: total,
+			completed: completed
+		});
+		res.json({
+			message: "Skill Progress",
+			status: true,
+			result: skillResults
+		});
+	} else {
+		res.json({
+			message: "Skill Not Found",
+			status: false,
+		});
+
+	}
+
+}
+
+
 Skill.viewProgressAll = async (req, res) => {
 
 	const skills = await sql.query(`SELECT * FROM "skill"`);
 	let skillResults = [];
-	
+
 	let user_id = req.body.user_id;
-	
+
 	const queryPromises = skills.rows.map(async (skill) => {
 		const skill_id = skill.id;
 		const [YogaPlanTotal, MeditationPlanTotal, FoundationPlanTotalMeditation, FoundationPlanTotalYoga, YogaPlanCompleted, MeditationPlanCompleted, FoundationPlanCompleted] = await Promise.all([
@@ -92,20 +156,20 @@ Skill.viewProgressAll = async (req, res) => {
 			sql.query(`SELECT COUNT(*) AS FoundationCompleted FROM "manage_foundation_plan" WHERE $1 = ANY(skills_id_completed) 
 				AND "manage_foundation_plan".user_id = $2`, [skill_id, user_id])
 		]);
-	
+
 		const completed = (
 			parseInt(FoundationPlanCompleted.rows[0].foundationcompleted)
 			+ parseInt(YogaPlanCompleted.rows[0].yogacompleted)
 			+ parseInt(MeditationPlanCompleted.rows[0].meditationcompleted)
 		);
-	
+
 		const total = (
 			parseInt(FoundationPlanTotalYoga.rows[0].foundationtotal2)
 			+ parseInt(FoundationPlanTotalMeditation.rows[0].foundationtotal1)
 			+ parseInt(YogaPlanTotal.rows[0].yogatotal)
 			+ parseInt(MeditationPlanTotal.rows[0].meditationtotal)
 		);
-	
+
 		skillResults.push({
 			skill_id: skill_id,
 			skill_name: skill.skill_name,
@@ -116,15 +180,15 @@ Skill.viewProgressAll = async (req, res) => {
 			completed: completed
 		});
 	});
-	
+
 	await Promise.all(queryPromises);
-	
+
 	res.json({
 		message: "Skill Progress",
 		status: true,
 		result: skillResults
 	});
-	
+
 
 }
 
@@ -330,8 +394,8 @@ Skill.update = async (req, res) => {
 			const olddiscription = SkillData.rows[0].discription;
 			const oldbenefit = SkillData.rows[0].benefit;
 			const oldstatus = SkillData.rows[0].status;
-				console.log(olddiscription);
-				console.log("discription");
+			console.log(olddiscription);
+			console.log("discription");
 
 			let { skill_name, benefit, discription, status, id } = req.body;
 			if (status === undefined || status === '') {

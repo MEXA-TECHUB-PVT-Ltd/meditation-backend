@@ -19,6 +19,26 @@ exports.start = (req, res) => {
   }  
   MeditationPlan.start( req, res);
 };
+exports.viewAllPlanForUser = (req, res) => {
+  if (!req.body) {
+    res.json({
+      message: "Content can not be empty!",
+      status: false,
+     });
+  }  
+  MeditationPlan.viewAllPlanForUser( req, res);
+};
+
+exports.viewStarted_user_Specific = (req, res) => {
+  if (!req.body) {
+    res.json({
+      message: "Content can not be empty!",
+      status: false,
+     });
+  }  
+  MeditationPlan.viewStarted_user_Specific( req, res);
+};
+
 exports.UpdateAnimation = (req, res) => {
   if (!req.body) {
     res.json({

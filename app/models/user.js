@@ -19,7 +19,7 @@ User.create = async (req, res) => {
 		password text,
 		gender text,
 		level text,
-		goals text[],
+		goals text,
 		age text,
 		badge_id integer,
         image   text ,

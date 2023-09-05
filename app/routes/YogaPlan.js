@@ -12,6 +12,7 @@ router.post("/add_icon",upload.single('icon'), YogaPlan.addIcon);
 router.post("/view_specific", YogaPlan.viewSpecific);
 router.post("/view_history_plan_user", YogaPlan.viewHistory_Plan_user);
 router.post("/search", YogaPlan.search);
+router.post("/viewAllPlanForUser", YogaPlan.viewAllPlanForUser);
 router.post("/view_completed", YogaPlan.viewCompleted);
 router.post("/view_completed_user", YogaPlan.viewCompleted_user);
 router.post("/view_started_user", YogaPlan.viewStarted_user);

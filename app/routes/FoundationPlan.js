@@ -19,6 +19,7 @@ router.post("/view_completed", FoundationPlan.viewCompleted);
 router.post("/view_completed_user", FoundationPlan.viewCompleted_user);
 router.post("/view_started_user", FoundationPlan.viewStarted_user);
 router.post("/view_all", FoundationPlan.viewAll);
+router.post("/viewAllPlanForUser", FoundationPlan.viewAllPlanForUser);
 router.put("/update", FoundationPlan.update);
 router.delete("/delete/:id" , FoundationPlan.delete)
 router.post("/change_plan_status", FoundationPlan.changePlanStatus);

@@ -20,6 +20,15 @@ exports.viewProgressAll = (req, res) => {
   Skill.viewProgressAll(req, res);
 };
 
+exports.viewProgressAllDSpecific = (req, res) => {
+  if (!req.body) {
+    res.json({
+      message: "Content can not be empty!",
+      status: false,
+    });
+  }
+  Skill.viewProgressAllDSpecific(req, res);
+};
 
 
 exports.viewProgress = (req, res) => {

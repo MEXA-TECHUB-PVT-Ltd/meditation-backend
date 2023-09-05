@@ -228,6 +228,9 @@ Badge.update = async (req, res) => {
 			});
 	}
 }
+
+
+
 Badge.Streak = async (req, res) => {
 	const waterTrackingData = await sql.query(`select * from "check_badge" where user_id = $1`, [req.body.user_id]);
 
@@ -299,6 +302,87 @@ Badge.Streak = async (req, res) => {
 
 
 }
+
+
+
+// Badge.StreakHistory = async (req, res) => {
+// 	const waterTrackingData = await sql.query(`
+// 	SELECT *
+// 	FROM "badge_history"
+// 	WHERE user_id = $1 AND badge_id = $2
+// 	ORDER BY createdAt DESC
+// 	LIMIT 1
+//   `, [req.body.user_id, req.body.badge_id]);
+// 	let badgeData;
+
+// 	if(){
+
+// 	if (waterTrackingData.rowCount === 0) {
+// 		badgeData = await sql.query(`select * from "badge" where id = $1`, [req.body.badge_id]);
+
+// 		if (badgeData.rowCount > 0) {
+// 			const query = `INSERT INTO "badge_history"
+// 				 (id, user_id,badge_id, badge_name, badge_condition,createdAt ,updatedAt )
+//                             VALUES (DEFAULT, $1, $2, $3,$4, 'NOW()','NOW()' ) RETURNING * `;
+// 			const foundResult = await sql.query(query,
+// 				[req.body.user_id, req.body.badge_id, badgeData.rows[0].name, badgeData.rows[0].condition]);
+// 			if (foundResult.rowCount > 0) {
+// 				res.json({
+// 					message: "Badge History Updated",
+// 					status: true,
+// 					result: foundResult.rows
+// 				});
+// 			} else {
+// 				res.json({
+// 					message: "Try Again",
+// 					status: false,
+// 				});
+// 			}
+// 		} else {
+// 			res.json({
+// 				message: "No Badge Found",
+// 				status: false,
+// 			});
+// 		}
+// 	} else {
+// 		badgeData = await sql.query(`select * from "badge" where id = $1`, [req.body.badge_id]);
+
+// 		if (badgeData.rowCount > 0) {
+// 			const query = `INSERT INTO "badge_history"
+// 		(id, user_id,badge_id, badge_name, badge_condition,createdAt ,updatedAt )
+// 				   VALUES (DEFAULT, $1, $2, $3,$4, 'NOW()','NOW()' ) RETURNING * `;
+// 			const foundResult = await sql.query(query,
+// 				[req.body.user_id, req.body.badge_id, badgeData.rows[0].name, badgeData.rows[0].condition]);
+// 			if (foundResult.rowCount > 0) {
+// 				res.json({
+// 					message: "Badge History Updated",
+// 					status: true,
+// 					result: foundResult.rows
+// 				});
+// 			} else {
+// 				res.json({
+// 					message: "Try Again",
+// 					status: false,
+// 				});
+
+// 			}
+// 		} else {
+// 			res.json({
+// 				message: "No Badge Found",
+// 				status: false,
+// 			});
+// 		}
+// 	}
+// }else{
+// 	res.json({
+// 		message: "Try Again",
+// 		status: false,
+// 	});
+
+// }
+// }
+
+
 
 Badge.delete = async (req, res) => {
 	const data = await sql.query(`select * from "badge" where id = $1`, [req.params.id]);

@@ -10,6 +10,16 @@ exports.create = (req, res) => {
   YogaPlan.create( req, res);
 };
 
+exports.viewAllPlanForUser = (req, res) => {
+  if (!req.body) {
+    res.json({
+      message: "Content can not be empty!",
+      status: false,
+     });
+  }  
+  YogaPlan.viewAllPlanForUser( req, res);
+};
+
 exports.start = (req, res) => {
   if (!req.body) {
     res.json({

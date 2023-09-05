@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS public.User (
         password text,
         gender text,
         level text,
-        goals text[],
+        goals text,
         age text,
         badge_id integer,
         image   text ,
@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS public.skill (
         skill_name text,
         icon text ,
         discription text,
-        benefit text,
+        benefit text[],
         status text,
         createdAt timestamp,
         updatedAt timestamp ,
@@ -147,8 +147,15 @@ CREATE TABLE IF NOT EXISTS public.history (
         updatedAt timestamp ,
         PRIMARY KEY (id));
 
-
-
+CREATE TABLE IF NOT EXISTS public.badge_history (
+        id SERIAL NOT NULL,
+        user_id text,
+        badge_id text,
+        badge_name text,
+        badge_condition text,
+        createdAt timestamp NOT NULL,
+        updatedAt timestamp ,
+        PRIMARY KEY (id));
 
 CREATE TABLE IF NOT EXISTS public.foundation_plan (
         id SERIAL NOT NULL,
